@@ -1,8 +1,8 @@
 import numpy as np
 
-from src.grid import Direction, compute_score, update_grid_inplace, is_word_placable, SCORE_GRID
+from src.grid import Direction, is_word_placable, SCORE_GRID
 from src.tree import Tree
-from src.utils import count_letters, measure_execution_time, load_word, load_letter_values
+from src.utils import count_letters, measure_execution_time
 
 
 def convert_to_tree(words: list) -> Tree:
@@ -32,8 +32,8 @@ def find_words(letters: list, tree: Tree):
 
 
 def find_possible_start_positions(
-        word: str,
-        current_grid: np.matrix,
+    word: str,
+    current_grid: np.matrix,
 ) -> list[tuple[int, int, Direction]]:
     """
     Find all possible start positions for a word on the current grid
@@ -50,10 +50,10 @@ def find_possible_start_positions(
 
 
 def find_best_placement(
-        word: str,
-        letters_values: dict,
-        current_grid: np.matrix,
-        score_grid: np.matrix = SCORE_GRID
+    word: str,
+    letters_values: dict,
+    current_grid: np.matrix,
+    score_grid: np.matrix = SCORE_GRID,
 ) -> tuple[int, int, Direction]:
     """
     Find the best placement for a word on the current grid
@@ -64,4 +64,3 @@ def find_best_placement(
     :return:
     """
     pass
-

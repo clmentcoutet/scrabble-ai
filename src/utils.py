@@ -13,6 +13,7 @@ def measure_execution_time(func):
     :param func:
     :return:
     """
+
     def wrapper(*args, **kwargs):
         start_time = time.time()
         result = func(*args, **kwargs)
@@ -31,10 +32,10 @@ def load_letter_values(file: str) -> dict:
     :return:
     """
     letter_values: dict[str, LetterValue] = {}
-    with open(file, 'r') as f:
+    with open(file, "r") as f:
         for line in f:
-            letter, number, value = line.strip().split(' ')
-            letter_values[letter.lower()] = {'number': int(number), 'value': int(value)}
+            letter, number, value = line.strip().split(" ")
+            letter_values[letter.lower()] = {"number": int(number), "value": int(value)}
     return letter_values
 
 
@@ -62,7 +63,7 @@ def load_word(file: str, max_size: int = float("inf")) -> list:
     :return:
     """
     result = []
-    with open(file, 'r') as f:
+    with open(file, "r") as f:
         for word in f:
             if len(word.strip()) <= max_size:
                 result.append(word.strip())

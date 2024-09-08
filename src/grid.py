@@ -5,7 +5,6 @@ import numpy as np
 
 from src import settings, utils
 from src.tree import Tree
-from src.utils import LetterValue
 
 
 class CellValue(enum.Enum):
@@ -21,14 +20,15 @@ class CellValue(enum.Enum):
 
 
 class Direction(enum.Enum):
-    HORIZONTAL = 'H'
-    VERTICAL = 'V'
+    HORIZONTAL = "H"
+    VERTICAL = "V"
 
 
 class Result(TypedDict):
     state: bool
     letter_already_placed: List[str]
     message: str
+    has_perpendicular_word: bool
 
 
 LETTER_VALUES = utils.load_letter_values(settings.LETTERS_VALUES_PATH)
@@ -44,7 +44,6 @@ def compute_score(
     :param start_position:
     :param word:
     :param direction:
-    :param letters_values:
     :return:
     """
     score = 0
@@ -56,7 +55,7 @@ def compute_score(
         else:
             y += i
         cell_value = SCORE_GRID[x, y]
-        letter_value = LETTER_VALUES[letter]['value']
+        letter_value = LETTER_VALUES[letter]["value"]
         match cell_value:
             case CellValue.EMPTY:
                 score += letter_value
@@ -77,7 +76,7 @@ def compute_score(
 
 
 class Grid:
-    def __init__(self, grid: np.matrix = np.zeros((15, 15), dtype=str)):
+    def __init__(self, grid: np.ndarray = np.zeros((15, 15), dtype=str)):
         self.grid = grid
 
     def __getitem__(self, item):
@@ -102,7 +101,9 @@ class Grid:
     def __str__(self):
         return str(self.grid)
 
-    def place_word(self, start_position: tuple, word: str, direction: Direction) -> None:
+    def place_word(
+            self, start_position: tuple, word: str, direction: Direction
+    ) -> None:
         """
         Place a word on the grid
         :param start_position:
@@ -118,23 +119,27 @@ class Grid:
                 self.grid[x + i, y] = letter
 
 
-SCORE_GRID = Grid(np.matrix([
-    [4, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 3, 0, 0, 4],
-    [0, 1, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 1, 0],
-    [0, 0, 1, 0, 0, 0, 3, 0, 3, 0, 0, 0, 1, 0, 0],
-    [3, 0, 0, 1, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 3],
-    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-    [0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 0],
-    [0, 0, 3, 0, 0, 0, 3, 0, 3, 0, 0, 0, 3, 0, 0],
-    [4, 0, 0, 3, 0, 0, 0, 5, 0, 0, 0, 3, 0, 0, 4],
-    [0, 0, 3, 0, 0, 0, 3, 0, 3, 0, 0, 0, 3, 0, 0],
-    [0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 0],
-    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-    [3, 0, 0, 1, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 3],
-    [0, 0, 1, 0, 0, 0, 3, 0, 3, 0, 0, 0, 1, 0, 0],
-    [0, 1, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 1, 0],
-    [4, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 3, 0, 0, 4]
-]))
+SCORE_GRID = Grid(
+    np.array(
+        [
+            [4, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 3, 0, 0, 4],
+            [0, 1, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 1, 0],
+            [0, 0, 1, 0, 0, 0, 3, 0, 3, 0, 0, 0, 1, 0, 0],
+            [3, 0, 0, 1, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 3],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 0],
+            [0, 0, 3, 0, 0, 0, 3, 0, 3, 0, 0, 0, 3, 0, 0],
+            [4, 0, 0, 3, 0, 0, 0, 5, 0, 0, 0, 3, 0, 0, 4],
+            [0, 0, 3, 0, 0, 0, 3, 0, 3, 0, 0, 0, 3, 0, 0],
+            [0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+            [3, 0, 0, 1, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 3],
+            [0, 0, 1, 0, 0, 0, 3, 0, 3, 0, 0, 0, 1, 0, 0],
+            [0, 1, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 1, 0],
+            [4, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 3, 0, 0, 4],
+        ]
+    )
+)
 
 
 class WordPlacer:
@@ -142,7 +147,9 @@ class WordPlacer:
         self.grid: Grid = grid
         self.words_tree: Tree = words_tree
 
-    def is_word_placable(self, start_position: Tuple[int, int], word: str, direction: Direction) -> Result:
+    def is_word_placable(
+            self, start_position: Tuple[int, int], word: str, direction: Direction
+    ) -> Result:
         """
         Check if a word can be placed on the grid.
         A word can be placed if:
@@ -156,6 +163,9 @@ class WordPlacer:
         :rtype: object
 
         """
+        if not self.words_tree.is_word(word):
+            return self._create_result(False, [], f"Word {word} is not valid")
+
         if not self._is_word_in_bounds(start_position, word, direction):
             return self._create_result(False, [], "Word does not fit on the grid")
 
@@ -165,7 +175,9 @@ class WordPlacer:
         return self._check_word_placement(start_position, word, direction)
 
     @staticmethod
-    def _is_word_in_bounds(start_position: Tuple[int, int], word: str, direction: Direction) -> bool:
+    def _is_word_in_bounds(
+            start_position: Tuple[int, int], word: str, direction: Direction
+    ) -> bool:
         """
         Check if a word is in bounds of the grid
         :param start_position:
@@ -187,9 +199,13 @@ class WordPlacer:
         Check if the grid is empty
         :return:
         """
-        return np.all(self.grid.grid == '')  # Assuming EMPTY_GRID is a grid of empty strings
+        return np.all(
+            self.grid.grid == ""
+        )
 
-    def _check_first_word_placement(self, start_position: Tuple[int, int], word: str, direction: Direction) -> Result:
+    def _check_first_word_placement(
+            self, start_position: Tuple[int, int], word: str, direction: Direction
+    ) -> Result:
         """
         Check if the first word can be placed on the grid
         :param start_position:
@@ -200,35 +216,60 @@ class WordPlacer:
         x, y = start_position
         if direction == Direction.HORIZONTAL:
             if y + len(word) - 1 < 7 or y > 7:
-                return self._create_result(False, [], "First word must pass through the center cell")
+                return self._create_result(
+                    False, [], "First word must pass through the center cell"
+                )
         else:
             if x + len(word) - 1 < 7 or x > 7:
-                return self._create_result(False, [], "First word must pass through the center cell")
+                return self._create_result(
+                    False, [], "First word must pass through the center cell"
+                )
         return self._create_result(True, [], "")
 
-    def _check_word_placement(self, start_position: Tuple[int, int], word: str, direction: Direction) -> Result:
+    def _check_word_placement(
+            self, start_position: Tuple[int, int], word: str, direction: Direction
+    ) -> Result:
+        """
+        Check if a word can be placed on the grid
+        :param start_position:
+        :param word:
+        :param direction:
+        :return:
+        """
+        letter_already_placed = []
         is_touching_existing_word = False
         x, y = start_position
 
         for i, letter in enumerate(word):
-            current_pos = (x, y + i) if direction == Direction.HORIZONTAL else (x + i, y)
+            current_pos = (
+                (x, y + i) if direction == Direction.HORIZONTAL else (x + i, y)
+            )
             grid_letter = self.grid[current_pos]
-
-            if grid_letter != '':
+            if grid_letter != "":
                 if grid_letter != letter:
-                    return self._create_result(False,
-                                               [],
-                                               f"Looking to place letter {letter} at position {current_pos} but found {grid_letter}")
+                    return self._create_result(
+                        False,
+                        [],
+                        f"Looking to place letter {letter} at position {current_pos} but found {grid_letter}",
+                    )
                 is_touching_existing_word = True
             else:
-                result = self._check_perpendicular_word(current_pos, letter, direction)
-                if not result['state']:
-                    return result
-                is_touching_existing_word = is_touching_existing_word or result['state']
+                letter_already_placed.append(letter)
+                horizontal_result = self._check_perpendicular_word(
+                    current_pos, letter, direction
+                )
+                if not horizontal_result["state"]:
+                    return horizontal_result
+                is_touching_existing_word = is_touching_existing_word or (
+                        horizontal_result["state"]
+                        and horizontal_result["has_perpendicular_word"]
+                )
 
-        return self._create_result(is_touching_existing_word, [], "")
+        return self._create_result(is_touching_existing_word, letter_already_placed, "")
 
-    def _check_perpendicular_word(self, position: Tuple[int, int], letter: str, direction: Direction) -> Result:
+    def _check_perpendicular_word(
+            self, position: Tuple[int, int], letter: str, direction: Direction
+    ) -> Result:
         """
         Check if a perpendicular word is valid
         :param position: position of the letter
@@ -238,16 +279,16 @@ class WordPlacer:
         """
         x, y = position
         if direction == Direction.HORIZONTAL:
-            top_touching = x - 1 >= 0 and self.grid[x - 1, y] != ''
-            bottom_touching = x + 1 < 15 and self.grid[x + 1, y] != ''
+            top_touching = x - 1 >= 0 and self.grid[x - 1, y] != ""
+            bottom_touching = x + 1 < 15 and self.grid[x + 1, y] != ""
             vertical_word = self._get_vertical_word(x, y, letter)
         else:
-            top_touching = y - 1 >= 0 and self.grid[x, y - 1] != ''
-            bottom_touching = y + 1 < 15 and self.grid[x, y + 1] != ''
+            top_touching = y - 1 >= 0 and self.grid[x, y - 1] != ""
+            bottom_touching = y + 1 < 15 and self.grid[x, y + 1] != ""
             vertical_word = self._get_horizontal_word(x, y, letter)
 
         if not (top_touching or bottom_touching):
-            return self._create_result(True, [], "")
+            return self._create_result(True, [], "", has_perpendicular_word=False)
 
         if not self.words_tree.is_word(vertical_word):
             return self._create_result(False, [], f"Word {vertical_word} is not valid")
@@ -262,23 +303,56 @@ class WordPlacer:
         :param letter:
         :return:
         """
-        return self._get_word_part(x, y, -1, 0) + letter + self._get_word_part(x, y, 1, 15)
+        return (
+                self._get_word_part(x, y, -1, 0) + letter + self._get_word_part(x, y, 1, 15)
+        )
 
     def _get_horizontal_word(self, x: int, y: int, letter: str) -> str:
-        return self._get_word_part(x, y, 0, -1) + letter + self._get_word_part(x, y, 0, 1)
+        """
+        Get the horizontal word that contains the letter at position (x, y)
+        :param x:
+        :param y:
+        :param letter:
+        :return:
+        """
+        return (
+                self._get_word_part(x, y, 0, -1) + letter + self._get_word_part(x, y, 0, 1)
+        )
 
     def _get_word_part(self, x: int, y: int, dx: int, dy: int) -> str:
-        word = ''
+        """
+        Get the word part in the direction (dx, dy) from position (x, y)
+        :param x:
+        :param y:
+        :param dx:
+        :param dy:
+        :return:
+        """
+        word = ""
         nx, ny = x + dx, y + dy
-        while 0 <= nx < 15 and 0 <= ny < 15 and self.grid[nx, ny] != '':
+        while 0 <= nx < 15 and 0 <= ny < 15 and self.grid[nx, ny] != "":
             word += self.grid[nx, ny]
             nx, ny = nx + dx, ny + dy
         return word[::-1] if dx < 0 or dy < 0 else word
 
     @staticmethod
-    def _create_result(state: bool, letter_already_placed: List[str], message: str) -> Result:
+    def _create_result(
+            state: bool,
+            letter_already_placed: List[str],
+            message: str,
+            has_perpendicular_word: bool = True,
+    ) -> Result:
+        """
+        Create a result dictionary
+        :param state:
+        :param letter_already_placed:
+        :param message:
+        :param has_perpendicular_word:
+        :return:
+        """
         return {
-            'state': state,
-            'letter_already_placed': letter_already_placed,
-            'message': message
+            "state": state,
+            "letter_already_placed": letter_already_placed,
+            "message": message,
+            "has_perpendicular_word": has_perpendicular_word,
         }

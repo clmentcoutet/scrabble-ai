@@ -29,11 +29,7 @@ class Tree:
             node = node.children[letter]
         node.is_end_of_word = True
 
-    def search(self,
-               node: TreeNode,
-               letters_count: dict,
-               path: list,
-               results: list):
+    def search(self, node: TreeNode, letters_count: dict, path: list, results: list):
         """
         Search for all valid words that can be formed with the given letters
         :param node:
@@ -43,7 +39,7 @@ class Tree:
         :return:
         """
         if node.is_end_of_word:
-            results.append(''.join(path))
+            results.append("".join(path))
 
         for letter in letters_count:
             if letters_count[letter] > 0 and letter in node.children:
@@ -53,7 +49,7 @@ class Tree:
                 path.pop()
                 letters_count[letter] += 1
             # add "*" to search for any letter
-            if letter == '*' and letters_count[letter] > 0:
+            if letter == "*" and letters_count[letter] > 0:
                 letters_count[letter] -= 1
                 for child in node.children:
                     path.append(child)
@@ -67,10 +63,8 @@ class Tree:
         :param word:
         :return:
         """
-        print(f"Checking word is_word {word}")
         node = self.root
         for letter in word:
-            print(letter)
             if letter not in node.children:
                 return False
             node = node.children[letter]
