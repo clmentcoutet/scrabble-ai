@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "scrabble"
+version = "0.1.0"
+description = ""
+authors = ["Clément Coutet <clement.coutet@gmail.com>"]
+readme = "README.md"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+numpy = "^2.0.1"
+pytest = "^8.3.2"
+ruff = "^0.6.2"
+mypy = "^1.11.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
