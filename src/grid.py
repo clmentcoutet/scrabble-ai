@@ -35,9 +35,9 @@ LETTER_VALUES = utils.load_letter_values(settings.LETTERS_VALUES_PATH)
 
 
 def compute_score(
-        start_position: tuple,
-        word: str,
-        direction: Direction,
+    start_position: tuple,
+    word: str,
+    direction: Direction,
 ) -> int:
     """
     Compute the score of a word placed on the grid
@@ -102,7 +102,7 @@ class Grid:
         return str(self.grid)
 
     def place_word(
-            self, start_position: tuple, word: str, direction: Direction
+        self, start_position: tuple, word: str, direction: Direction
     ) -> None:
         """
         Place a word on the grid
@@ -148,7 +148,7 @@ class WordPlacer:
         self.words_tree: Tree = words_tree
 
     def is_word_placable(
-            self, start_position: Tuple[int, int], word: str, direction: Direction
+        self, start_position: Tuple[int, int], word: str, direction: Direction
     ) -> Result:
         """
         Check if a word can be placed on the grid.
@@ -176,7 +176,7 @@ class WordPlacer:
 
     @staticmethod
     def _is_word_in_bounds(
-            start_position: Tuple[int, int], word: str, direction: Direction
+        start_position: Tuple[int, int], word: str, direction: Direction
     ) -> bool:
         """
         Check if a word is in bounds of the grid
@@ -199,12 +199,10 @@ class WordPlacer:
         Check if the grid is empty
         :return:
         """
-        return np.all(
-            self.grid.grid == ""
-        )
+        return np.all(self.grid.grid == "")
 
     def _check_first_word_placement(
-            self, start_position: Tuple[int, int], word: str, direction: Direction
+        self, start_position: Tuple[int, int], word: str, direction: Direction
     ) -> Result:
         """
         Check if the first word can be placed on the grid
@@ -227,7 +225,7 @@ class WordPlacer:
         return self._create_result(True, [], "")
 
     def _check_word_placement(
-            self, start_position: Tuple[int, int], word: str, direction: Direction
+        self, start_position: Tuple[int, int], word: str, direction: Direction
     ) -> Result:
         """
         Check if a word can be placed on the grid
@@ -261,14 +259,14 @@ class WordPlacer:
                 if not horizontal_result["state"]:
                     return horizontal_result
                 is_touching_existing_word = is_touching_existing_word or (
-                        horizontal_result["state"]
-                        and horizontal_result["has_perpendicular_word"]
+                    horizontal_result["state"]
+                    and horizontal_result["has_perpendicular_word"]
                 )
 
         return self._create_result(is_touching_existing_word, letter_already_placed, "")
 
     def _check_perpendicular_word(
-            self, position: Tuple[int, int], letter: str, direction: Direction
+        self, position: Tuple[int, int], letter: str, direction: Direction
     ) -> Result:
         """
         Check if a perpendicular word is valid
@@ -304,7 +302,7 @@ class WordPlacer:
         :return:
         """
         return (
-                self._get_word_part(x, y, -1, 0) + letter + self._get_word_part(x, y, 1, 15)
+            self._get_word_part(x, y, -1, 0) + letter + self._get_word_part(x, y, 1, 15)
         )
 
     def _get_horizontal_word(self, x: int, y: int, letter: str) -> str:
@@ -316,7 +314,7 @@ class WordPlacer:
         :return:
         """
         return (
-                self._get_word_part(x, y, 0, -1) + letter + self._get_word_part(x, y, 0, 1)
+            self._get_word_part(x, y, 0, -1) + letter + self._get_word_part(x, y, 0, 1)
         )
 
     def _get_word_part(self, x: int, y: int, dx: int, dy: int) -> str:
@@ -337,10 +335,10 @@ class WordPlacer:
 
     @staticmethod
     def _create_result(
-            state: bool,
-            letter_already_placed: List[str],
-            message: str,
-            has_perpendicular_word: bool = True,
+        state: bool,
+        letter_already_placed: List[str],
+        message: str,
+        has_perpendicular_word: bool = True,
     ) -> Result:
         """
         Create a result dictionary

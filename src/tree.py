@@ -36,7 +36,7 @@ class Tree:
         :param letters_count:
         :param path:
         :param results:
-        :return:
+        :return: None but modifies the results list in place
         """
         if node.is_end_of_word:
             results.append("".join(path))
