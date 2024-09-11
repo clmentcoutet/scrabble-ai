@@ -2,7 +2,8 @@ import pytest
 import numpy as np
 from typing import List
 
-from src.grid import WordPlacer, Direction, Grid
+from src.utils.grid import WordPlacerChecker, Grid
+from src.utils.typing_utils import Direction
 
 
 class MockTree:
@@ -27,7 +28,7 @@ def mock_tree():
 
 @pytest.fixture
 def word_placer(empty_grid, mock_tree):
-    return WordPlacer(empty_grid, mock_tree)
+    return WordPlacerChecker(empty_grid, mock_tree)
 
 
 def test_is_word_in_bounds(word_placer):

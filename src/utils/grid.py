@@ -1,35 +1,11 @@
-import enum
-from typing import TypedDict, List, Tuple
+from typing import List, Tuple
 
 import numpy as np
 
-from src import settings, utils
-from src.tree import Tree
-
-
-class CellValue(enum.Enum):
-    EMPTY = 0
-    DOUBLE_WORD = 1
-    TRIPLE_WORD = 4
-    DOUBLE_LETTER = 3
-    TRIPLE_LETTER = 2
-    START = 5
-
-    def __repr__(self):
-        return self.value
-
-
-class Direction(enum.Enum):
-    HORIZONTAL = "H"
-    VERTICAL = "V"
-
-
-class Result(TypedDict):
-    state: bool
-    letter_already_placed: List[str]
-    message: str
-    has_perpendicular_word: bool
-
+from src import settings
+from src.utils import utils
+from src.utils.tree import Tree
+from src.utils.typing_utils import CellValue, Direction, Result
 
 LETTER_VALUES = utils.load_letter_values(settings.LETTERS_VALUES_PATH)
 
@@ -91,15 +67,17 @@ class Grid:
 
         self.grid[key] = value
 
-    def __repr__(self):
-        """
-        pretty print the grid
-        :return:
-        """
-        return str(self.grid)
-
     def __str__(self):
-        return str(self.grid)
+        result = f"\n|{'|'.join(['---'] * 15)}|\n"
+        for row in self.grid:
+            result += "|"
+            for cell in row:
+                result += "{:^3}|".format(cell)
+            result += f"\n|{'|'.join(['---'] * 15)}|\n"
+        return result
+
+    def serialize(self) -> dict:
+        return {"grid": self.grid.tolist(), "shape": self.grid.shape}
 
     def place_word(
         self, start_position: tuple, word: str, direction: Direction
@@ -141,8 +119,10 @@ SCORE_GRID = Grid(
     )
 )
 
+EMPTY_GRID = Grid(np.array([[""] * 15] * 15))
 
-class WordPlacer:
+
+class WordPlacerChecker:
     def __init__(self, grid: Grid, words_tree: Tree):
         self.grid: Grid = grid
         self.words_tree: Tree = words_tree
@@ -194,7 +174,7 @@ class WordPlacer:
             return False
         return True
 
-    def _is_grid_empty(self) -> bool:
+    def _is_grid_empty(self) -> np.bool:
         """
         Check if the grid is empty
         :return:

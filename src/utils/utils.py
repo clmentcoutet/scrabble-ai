@@ -1,5 +1,5 @@
 import time
-from typing import TypedDict
+from typing import TypedDict, Dict, List
 
 
 class LetterValue(TypedDict):
@@ -25,7 +25,7 @@ def measure_execution_time(func):
     return wrapper
 
 
-def load_letter_values(file: str) -> dict:
+def load_letter_values(file: str) -> dict[str, LetterValue]:
     """
     Load the letter values from a file
     :param file:
@@ -39,13 +39,13 @@ def load_letter_values(file: str) -> dict:
     return letter_values
 
 
-def count_letters(letters: list) -> dict:
+def count_letters(letters: List) -> Dict[str, int]:
     """
     Count the number of occurrences of each letter in the list
     :param letters:
     :return:
     """
-    letter_count = {}
+    letter_count: Dict[str, int] = {}
     for letter in letters:
         if letter in letter_count:
             letter_count[letter] += 1
@@ -55,7 +55,7 @@ def count_letters(letters: list) -> dict:
 
 
 @measure_execution_time
-def load_word(file: str, max_size: int = float("inf")) -> list:
+def load_word(file: str, max_size: int = int("inf")) -> list:
     """
     Load words from a file and filter them by size
     :param file:

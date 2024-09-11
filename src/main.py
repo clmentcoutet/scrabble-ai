@@ -1,22 +1,13 @@
+from typing import List
 
-from src.tree import Tree
-from src.utils import count_letters, measure_execution_time
-
-
-def convert_to_tree(words: list) -> Tree:
-    """
-    Convert a list of words to a tree
-    :param words: list of words
-    :return: tree containing all words
-    """
-    tree = Tree()
-    for word in words:
-        tree.insert(word.lower())
-    return tree
+from src.game.game import Game
+from src.game.player import HumanPlayer
+from src.utils.tree import Tree
+from src.utils.utils import count_letters, measure_execution_time
 
 
 @measure_execution_time
-def find_words(letters: list, tree: Tree):
+def find_words(letters: list, tree: Tree)-> List[str]:
     """
     Find all valid words that can be formed with the given letters
     :param letters: list of letters
@@ -24,6 +15,15 @@ def find_words(letters: list, tree: Tree):
     :return: list of valid words
     """
     letters_count = count_letters(letters)
-    results = []
+    results: List[str] = []
     tree.search(tree.root, letters_count, [], results)
     return sorted(results, key=len, reverse=True)
+
+
+if __name__ == "__main__":
+    player_1 = HumanPlayer()
+    player_2 = HumanPlayer()
+    game_instance = Game([player_1, player_2])
+    print(game_instance)
+    game_instance.init_game()
+    print(game_instance)

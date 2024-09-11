@@ -1,9 +1,13 @@
+from src import settings
+from src.utils.utils import load_word
+
+
 class TreeNode:
     """
     Node of the tree data structure
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.children: dict = {}
         self.is_end_of_word: bool = False
 
@@ -13,8 +17,12 @@ class Tree:
     Tree data structure to store a list of words
     """
 
-    def __init__(self):
+    def __init__(self, origin_file_path: str = settings.FRENCH_DICTIONARY_PATH):
+        self.origin_file_path = origin_file_path
         self.root: TreeNode = TreeNode()
+
+    def __str__(self):
+        return f"Tree with root {self.root}"
 
     def insert(self, word: str):
         """
@@ -69,3 +77,20 @@ class Tree:
                 return False
             node = node.children[letter]
         return node.is_end_of_word
+
+
+def convert_to_tree(words: list) -> Tree:
+    """
+    Convert a list of words to a tree
+    :param words: list of words
+    :return: tree containing all words
+    """
+    tree = Tree()
+    for word in words:
+        tree.insert(word.lower())
+    return tree
+
+
+BASE_TREE = convert_to_tree(
+    load_word(settings.FRENCH_DICTIONARY_PATH, settings.MAX_WORD_SIZE)
+)

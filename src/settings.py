@@ -1,5 +1,7 @@
 import os
 
+MAX_WORD_SIZE = 15
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 DATA_FOLDER = "data/"
