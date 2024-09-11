@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from typing import List
 
-from src.utils.grid import WordPlacerChecker, Grid
+from src.utils.grid import WordPlacerChecker, Grid, compute_score
 from src.utils.typing_utils import Direction
 
 
@@ -31,13 +31,20 @@ def word_placer(empty_grid, mock_tree):
     return WordPlacerChecker(empty_grid, mock_tree)
 
 
+def test_compute_score():
+    assert compute_score("test", (7, 7), Direction.HORIZONTAL) == 8
+    assert compute_score("toute", (7, 7), Direction.VERTICAL) == 12
+    assert compute_score("tester", (7, 7), Direction.HORIZONTAL) == 14
+    assert compute_score("atout", (7, 7), Direction.VERTICAL) == 12
+
+
 def test_is_word_in_bounds(word_placer):
-    assert word_placer._is_word_in_bounds((7, 7), "test", Direction.HORIZONTAL)
-    assert word_placer._is_word_in_bounds((7, 7), "test", Direction.VERTICAL)
-    assert not word_placer._is_word_in_bounds((7, 12), "test", Direction.HORIZONTAL)
-    assert not word_placer._is_word_in_bounds((12, 7), "test", Direction.VERTICAL)
+    assert word_placer._is_word_in_bounds("test", (7, 7), Direction.HORIZONTAL)
+    assert word_placer._is_word_in_bounds("test", (7, 7), Direction.VERTICAL)
+    assert not word_placer._is_word_in_bounds("test", (7, 12), Direction.HORIZONTAL)
+    assert not word_placer._is_word_in_bounds("test", (12, 7), Direction.VERTICAL)
     assert not word_placer._is_word_in_bounds(
-        (7, 7), "verylongwordthatdoesntfit", Direction.HORIZONTAL
+        "verylongwordthatdoesntfit", (7, 7), Direction.HORIZONTAL
     )
 
 
@@ -49,16 +56,16 @@ def test_is_grid_empty(word_placer):
 
 def test_check_first_word_placement(word_placer):
     assert word_placer._check_first_word_placement(
-        (7, 7), "test", Direction.HORIZONTAL
+        "test", (7, 7), Direction.HORIZONTAL
     )["state"]
-    assert word_placer._check_first_word_placement((7, 7), "test", Direction.VERTICAL)[
+    assert word_placer._check_first_word_placement("test", (7, 7), Direction.VERTICAL)[
         "state"
     ]
     assert not word_placer._check_first_word_placement(
-        (0, 0), "test", Direction.HORIZONTAL
+        "test", (0, 0), Direction.HORIZONTAL
     )["state"]
     assert not word_placer._check_first_word_placement(
-        (14, 14), "test", Direction.VERTICAL
+        "test", (14, 14), Direction.VERTICAL
     )["state"]
 
 
@@ -100,57 +107,57 @@ def test_check_perpendicular_word(word_placer):
 
 def test_check_word_placement(word_placer):
     word_placer.grid[7, 7:11] = list("tout")
-    assert word_placer._check_word_placement((6, 7), "atout", Direction.VERTICAL)[
+    assert word_placer._check_word_placement("atout", (6, 7), Direction.VERTICAL)[
         "state"
     ]
-    assert word_placer._check_word_placement((7, 6), "atoute", Direction.HORIZONTAL)[
+    assert word_placer._check_word_placement("atoute", (7, 6), Direction.HORIZONTAL)[
         "state"
     ]
-    assert not word_placer._check_word_placement((6, 7), "axout", Direction.VERTICAL)[
+    assert not word_placer._check_word_placement("axout", (6, 7), Direction.VERTICAL)[
         "state"
     ]
 
 
 def test_is_word_placable(word_placer):
     # First word placement
-    assert word_placer.is_word_placable((7, 7), "test", Direction.HORIZONTAL)["state"]
+    assert word_placer.is_word_placable("test", (7, 7), Direction.HORIZONTAL)["state"]
 
     # Update grid
     word_placer.grid[7, 7:11] = list("test")
     # Valid placements
-    assert word_placer.is_word_placable((7, 7), "tout", Direction.VERTICAL)["state"]
-    assert word_placer.is_word_placable((7, 7), "tester", Direction.HORIZONTAL)["state"]
+    assert word_placer.is_word_placable("tout", (7, 7), Direction.VERTICAL)["state"]
+    assert word_placer.is_word_placable("tester", (7, 7), Direction.HORIZONTAL)["state"]
 
     # Invalid placements
     assert (
-        not word_placer.is_word_placable((7, 7), "test", Direction.HORIZONTAL)[
+        not word_placer.is_word_placable("test", (7, 7), Direction.HORIZONTAL)[
             "letter_already_placed"
         ]
         != []
     )  # Overlapping
-    assert not word_placer.is_word_placable((0, 0), "test", Direction.HORIZONTAL)[
+    assert not word_placer.is_word_placable("test", (0, 0), Direction.HORIZONTAL)[
         "state"
     ]  # Not touching
-    assert not word_placer.is_word_placable((6, 8), "invalid", Direction.VERTICAL)[
+    assert not word_placer.is_word_placable("invalid", (6, 8), Direction.VERTICAL)[
         "state"
     ]  # Invalid word
 
 
 def test_is_word_placable_edge_cases(word_placer):
     # Word too long
-    assert not word_placer.is_word_placable((7, 7), "a" * 16, Direction.HORIZONTAL)[
+    assert not word_placer.is_word_placable("a" * 16, (7, 7), Direction.HORIZONTAL)[
         "state"
     ]
 
     # Word at edge of grid
-    assert word_placer.is_word_placable((14, 7), "test", Direction.HORIZONTAL)["state"]
-    assert not word_placer.is_word_placable((14, 7), "test", Direction.VERTICAL)[
+    assert word_placer.is_word_placable("test", (14, 7), Direction.HORIZONTAL)["state"]
+    assert not word_placer.is_word_placable("test", (14, 7), Direction.VERTICAL)[
         "state"
     ]
 
     # Word creating invalid perpendicular word
     word_placer.grid[7, 7:11] = list("test")
-    assert not word_placer.is_word_placable((6, 8), "ax", Direction.VERTICAL)["state"]
+    assert not word_placer.is_word_placable("ax", (6, 8), Direction.VERTICAL)["state"]
 
 
 if __name__ == "__main__":

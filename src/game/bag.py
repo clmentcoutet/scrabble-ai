@@ -1,4 +1,5 @@
 import random
+from typing import Generator
 
 from src import settings
 from src.utils.utils import LetterValue, load_letter_values
@@ -34,6 +35,13 @@ class Bag:
         if not self.bag:
             raise ValueError("Bag is empty")
         return self.bag.pop(random.randint(0, len(self.bag) - 1))
+
+    def pick_n_random_letters(self, n: int) -> Generator[str, None, None]:
+        for _ in range(n):
+            try:
+                yield self.pick_random_letter()
+            except ValueError:
+                break
 
 
 BASE_BAG = Bag(load_letter_values(settings.LETTERS_VALUES_PATH))

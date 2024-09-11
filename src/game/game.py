@@ -1,7 +1,8 @@
+import random
 from typing import List, TypedDict, Dict
 
 from src.game.bag import Bag, BASE_BAG
-from src.utils.grid import Grid
+from src.utils.grid import Grid, WordPlacerChecker, compute_score
 from src.game.player import Player
 from src.utils.tree import Tree, BASE_TREE
 from src.utils.typing_utils import PlayerMove
@@ -38,6 +39,7 @@ class Game:
     - rack_size: the size of the rack of the players
     - current_player: the id of the current player (hash of the player object)
     - game_history: a dictionary containing the game states at each turn, indexed by turn number
+        a state is registered after each turn
     """
 
     def __init__(
@@ -61,6 +63,13 @@ class Game:
         self.current_player: int = self.players[0].player_id
         self.turn: int = 0
         self.game_history: dict[int, GameState] = {}
+        self.word_placer_checker = WordPlacerChecker(self.grid, self.tree)
+
+    @property
+    def score(self) -> int:
+        if any([len(player.score_history) == 0 for player in self.players]):
+            return 0
+        return sum([player.score_history[-1] for player in self.players])
 
     def _list_players_str(self) -> str:
         return ", ".join([str(player) for player in self.players])
@@ -80,10 +89,60 @@ class Game:
             "game_history": self.game_history,
         }
 
-    def init_game(self):
+    def _next_turn(self, plays: Dict[int, PlayerMove]) -> None:
+        """
+        Go to the next turn, a turn is when each player has played once
+        - update the game history for the turn
+        - update the turn number
+        """
+
+        self.game_history[self.turn] = {
+            "grid": self.grid,
+            "bag": self.bag,
+            "plays": plays,
+        }
+        self.turn += 1
+
+    def _get_current_player_index(self) -> int:
+        return next(
+            index
+            for index, player in enumerate(self.players)
+            if player.player_id == self.current_player
+        )
+
+    def _fill_rack(self, player: Player):
+        nb_letters = self.rack_size - len(player.rack)
+        player.rack.extend(self.bag.pick_n_random_letters(nb_letters))
+
+    def _play_turn(self):
+        plays = {}
         for player in self.players:
-            for _ in range(self.rack_size):
-                try:
-                    player.rack.append(self.bag.pick_random_letter())
-                except ValueError:
-                    break
+            self.current_player = player.player_id
+            print(player.rack)
+            self._fill_rack(player)
+            print(player.rack)
+            play = player.get_valid_move(self.word_placer_checker)
+            print(player.rack)
+            score = compute_score(**play)
+            self.grid.place_word(**play)
+            player.update_score(score)
+            print(
+                f"Player {player.player_id} played {play} and scored {score} points, new score: {player.score_history[-1]}"
+            )
+
+            plays[player.player_id] = PlayerMove(rack_before=player.rack, play=play)
+        self._next_turn(plays)
+
+    def play_game(self):
+        print(f"Starting game with players: {self._list_players_str()}")
+        while self.bag and all([len(player.rack) > 0 for player in self.players]):
+            print(f"debug info: turn {self.turn}, players: {self._list_players_str()}")
+            self._play_turn()
+        print(f"Game over, final score: {self.score}")
+        return self.score
+
+    def init_game(self):
+        random.shuffle(self.players)
+        for player in self.players:
+            nb_letters = self.rack_size - len(player.rack)
+            player.rack = list(self.bag.pick_n_random_letters(nb_letters))

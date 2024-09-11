@@ -11,8 +11,8 @@ LETTER_VALUES = utils.load_letter_values(settings.LETTERS_VALUES_PATH)
 
 
 def compute_score(
-    start_position: tuple,
     word: str,
+    start_position: tuple,
     direction: Direction,
 ) -> int:
     """
@@ -33,19 +33,20 @@ def compute_score(
         cell_value = SCORE_GRID[x, y]
         letter_value = LETTER_VALUES[letter]["value"]
         match cell_value:
-            case CellValue.EMPTY:
+            case CellValue.EMPTY.value:
                 score += letter_value
-            case CellValue.DOUBLE_WORD:
+            case CellValue.DOUBLE_WORD.value:
                 score += letter_value
                 word_multiplier *= 2
-            case CellValue.TRIPLE_WORD:
+            case CellValue.TRIPLE_WORD.value:
                 score += letter_value
                 word_multiplier *= 3
-            case CellValue.DOUBLE_LETTER:
+            case CellValue.DOUBLE_LETTER.value:
                 score += letter_value * 2
-            case CellValue.TRIPLE_LETTER:
+            case CellValue.TRIPLE_LETTER.value:
                 score += letter_value * 3
-            case CellValue.START:
+            case CellValue.START.value:
+                SCORE_GRID[x, y] = 0
                 score += letter_value
                 word_multiplier *= 2
     return score * word_multiplier
@@ -68,19 +69,21 @@ class Grid:
         self.grid[key] = value
 
     def __str__(self):
-        result = f"\n|{'|'.join(['---'] * 15)}|\n"
-        for row in self.grid:
-            result += "|"
-            for cell in row:
+        # print number 1 to 15
+        result = "   " + "  ".join([f"{i:2}" for i in range(0, 15)]) + "\n"
+        result += f"  |{'|'.join(['---'] * 15)}|\n"
+        for i, row in enumerate(self.grid):
+            result += f"{i:2}|"
+            for j, cell in enumerate(row):
                 result += "{:^3}|".format(cell)
-            result += f"\n|{'|'.join(['---'] * 15)}|\n"
+            result += f"\n  |{'|'.join(['---'] * 15)}|\n"
         return result
 
     def serialize(self) -> dict:
         return {"grid": self.grid.tolist(), "shape": self.grid.shape}
 
     def place_word(
-        self, start_position: tuple, word: str, direction: Direction
+        self, word: str, start_position: tuple, direction: Direction
     ) -> None:
         """
         Place a word on the grid
@@ -128,7 +131,7 @@ class WordPlacerChecker:
         self.words_tree: Tree = words_tree
 
     def is_word_placable(
-        self, start_position: Tuple[int, int], word: str, direction: Direction
+        self, word: str, start_position: Tuple[int, int], direction: Direction
     ) -> Result:
         """
         Check if a word can be placed on the grid.
@@ -146,17 +149,17 @@ class WordPlacerChecker:
         if not self.words_tree.is_word(word):
             return self._create_result(False, [], f"Word {word} is not valid")
 
-        if not self._is_word_in_bounds(start_position, word, direction):
+        if not self._is_word_in_bounds(word, start_position, direction):
             return self._create_result(False, [], "Word does not fit on the grid")
 
         if self._is_grid_empty():
-            return self._check_first_word_placement(start_position, word, direction)
+            return self._check_first_word_placement(word, start_position, direction)
 
-        return self._check_word_placement(start_position, word, direction)
+        return self._check_word_placement(word, start_position, direction)
 
     @staticmethod
     def _is_word_in_bounds(
-        start_position: Tuple[int, int], word: str, direction: Direction
+        word: str, start_position: Tuple[int, int], direction: Direction
     ) -> bool:
         """
         Check if a word is in bounds of the grid
@@ -182,7 +185,7 @@ class WordPlacerChecker:
         return np.all(self.grid.grid == "")
 
     def _check_first_word_placement(
-        self, start_position: Tuple[int, int], word: str, direction: Direction
+        self, word: str, start_position: Tuple[int, int], direction: Direction
     ) -> Result:
         """
         Check if the first word can be placed on the grid
@@ -193,19 +196,19 @@ class WordPlacerChecker:
         """
         x, y = start_position
         if direction == Direction.HORIZONTAL:
-            if y + len(word) - 1 < 7 or y > 7:
+            if y + len(word) - 1 < 7 or y > 7 or x != 7:
                 return self._create_result(
                     False, [], "First word must pass through the center cell"
                 )
         else:
-            if x + len(word) - 1 < 7 or x > 7:
+            if x + len(word) - 1 < 7 or x > 7 or y != 7:
                 return self._create_result(
                     False, [], "First word must pass through the center cell"
                 )
-        return self._create_result(True, [], "")
+        return self._create_result(True, list(word), "")
 
     def _check_word_placement(
-        self, start_position: Tuple[int, int], word: str, direction: Direction
+        self, word: str, start_position: Tuple[int, int], direction: Direction
     ) -> Result:
         """
         Check if a word can be placed on the grid

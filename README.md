@@ -4,8 +4,9 @@ Implementation of scrabble in python.
 
 ## TODO
 
+- revoir la fonction de calcul de score pour les mots croisés, complété etc
+- gerer la validation des mots avec le joker
 - implement game logic for human vs human
-- serialize game state to save and load game, with every information needed to restore the game, and history of the game
 - computer player finding best word by trying all possible combinations
 - https://medium.com/@aydinschwa/coding-the-worlds-fastest-scrabble-program-in-python-2aa09db670e3
 - implement game logic for human vs computer

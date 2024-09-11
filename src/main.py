@@ -1,3 +1,4 @@
+import random
 from typing import List
 
 from src.game.game import Game
@@ -7,7 +8,7 @@ from src.utils.utils import count_letters, measure_execution_time
 
 
 @measure_execution_time
-def find_words(letters: list, tree: Tree)-> List[str]:
+def find_words(letters: list, tree: Tree) -> List[str]:
     """
     Find all valid words that can be formed with the given letters
     :param letters: list of letters
@@ -21,9 +22,9 @@ def find_words(letters: list, tree: Tree)-> List[str]:
 
 
 if __name__ == "__main__":
+    random.seed(42)
     player_1 = HumanPlayer()
     player_2 = HumanPlayer()
     game_instance = Game([player_1, player_2])
-    print(game_instance)
     game_instance.init_game()
-    print(game_instance)
+    game_instance.play_game()

@@ -55,7 +55,7 @@ def count_letters(letters: List) -> Dict[str, int]:
 
 
 @measure_execution_time
-def load_word(file: str, max_size: int = int("inf")) -> list:
+def load_word(file: str, max_size: float = float("inf")) -> list:
     """
     Load words from a file and filter them by size
     :param file:

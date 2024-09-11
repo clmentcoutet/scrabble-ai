@@ -2,10 +2,15 @@ import enum
 from typing import TypedDict, List
 
 
+class Direction(enum.Enum):
+    HORIZONTAL = "H"
+    VERTICAL = "V"
+
+
 class PlaceWord(TypedDict):
     word: str
-    position: tuple
-    direction: str
+    start_position: tuple
+    direction: Direction
 
 
 class PlayerMove(TypedDict):
@@ -23,11 +28,6 @@ class CellValue(enum.Enum):
 
     def __repr__(self):
         return self.value
-
-
-class Direction(enum.Enum):
-    HORIZONTAL = "H"
-    VERTICAL = "V"
 
 
 class Result(TypedDict):
