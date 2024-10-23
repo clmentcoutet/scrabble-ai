@@ -1,11 +1,12 @@
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 import numpy as np
 
 from src import settings
 from src.utils import utils
+from src.utils.logger_config import logger
 from src.utils.tree import Tree
-from src.utils.typing_utils import CellValue, Direction, Result
+from src.utils.typing_utils import CellValue, Direction, Result, PlaceWord
 
 LETTER_VALUES = utils.load_letter_values(settings.LETTERS_VALUES_PATH)
 
@@ -125,6 +126,32 @@ SCORE_GRID = Grid(
 EMPTY_GRID = Grid(np.array([[""] * 15] * 15))
 
 
+def compute_total_word_score(
+    place_word: PlaceWord, perpendicular_words: Dict[str, str]
+) -> int:
+    """
+    Compute the total score of a word placed on the grid
+    :param place_word:
+    :param perpendicular_words:
+    :return:
+    """
+    word = place_word["word"]
+    row, column = place_word["start_position"]
+    direction = place_word["direction"]
+    logger.debug(f"Placing word {word} at position {row, column} in direction {direction}")
+    score = compute_score(word, (column, row), direction)
+    for letter, perpendicular_word in perpendicular_words.items():
+        perpendicular_score = compute_score(
+            perpendicular_word,
+            (row, column),
+            Direction.VERTICAL
+            if direction == Direction.HORIZONTAL
+            else Direction.HORIZONTAL,
+        )
+        score += perpendicular_score
+    return score
+
+
 class WordPlacerChecker:
     def __init__(self, grid: Grid, words_tree: Tree):
         self.grid: Grid = grid
@@ -205,7 +232,7 @@ class WordPlacerChecker:
                 return self._create_result(
                     False, [], "First word must pass through the center cell"
                 )
-        return self._create_result(True, list(word), "")
+        return self._create_result(True, [], "")
 
     def _check_word_placement(
         self, word: str, start_position: Tuple[int, int], direction: Direction
@@ -218,6 +245,7 @@ class WordPlacerChecker:
         :return:
         """
         letter_already_placed = []
+        perpendicular_words = {}
         is_touching_existing_word = False
         x, y = start_position
 
@@ -233,9 +261,10 @@ class WordPlacerChecker:
                         [],
                         f"Looking to place letter {letter} at position {current_pos} but found {grid_letter}",
                     )
+                else:
+                    letter_already_placed.append(letter)
                 is_touching_existing_word = True
             else:
-                letter_already_placed.append(letter)
                 horizontal_result = self._check_perpendicular_word(
                     current_pos, letter, direction
                 )
@@ -243,10 +272,16 @@ class WordPlacerChecker:
                     return horizontal_result
                 is_touching_existing_word = is_touching_existing_word or (
                     horizontal_result["state"]
-                    and horizontal_result["has_perpendicular_word"]
+                    and horizontal_result["perpendicular_words"] != {}
                 )
+                perpendicular_words.update(horizontal_result["perpendicular_words"])
 
-        return self._create_result(is_touching_existing_word, letter_already_placed, "")
+        return self._create_result(
+            is_touching_existing_word,
+            letter_already_placed,
+            "",
+            perpendicular_words=perpendicular_words,
+        )
 
     def _check_perpendicular_word(
         self, position: Tuple[int, int], letter: str, direction: Direction
@@ -269,12 +304,17 @@ class WordPlacerChecker:
             vertical_word = self._get_horizontal_word(x, y, letter)
 
         if not (top_touching or bottom_touching):
-            return self._create_result(True, [], "", has_perpendicular_word=False)
+            return self._create_result(True, [], "", perpendicular_words={})
 
         if not self.words_tree.is_word(vertical_word):
             return self._create_result(False, [], f"Word {vertical_word} is not valid")
 
-        return self._create_result(top_touching or bottom_touching, [], "")
+        return self._create_result(
+            top_touching or bottom_touching,
+            [],
+            "",
+            perpendicular_words={letter: vertical_word},
+        )
 
     def _get_vertical_word(self, x: int, y: int, letter: str) -> str:
         """
@@ -321,19 +361,21 @@ class WordPlacerChecker:
         state: bool,
         letter_already_placed: List[str],
         message: str,
-        has_perpendicular_word: bool = True,
+        perpendicular_words: Dict[str, str] | None = None,
     ) -> Result:
         """
         Create a result dictionary
         :param state:
         :param letter_already_placed:
         :param message:
-        :param has_perpendicular_word:
+        :param perpendicular_word:
         :return:
         """
+        if perpendicular_words is None:
+            perpendicular_words = {}
         return {
             "state": state,
             "letter_already_placed": letter_already_placed,
             "message": message,
-            "has_perpendicular_word": has_perpendicular_word,
+            "perpendicular_words": perpendicular_words,
         }

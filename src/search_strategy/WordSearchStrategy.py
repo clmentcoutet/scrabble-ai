@@ -1,7 +1,7 @@
 from typing import List
 
 from src.utils.grid import WordPlacerChecker
-from src.utils.typing_utils import PlaceWord
+from src.utils.typing_utils import PlaceWord, ValidWord
 
 
 class WordSearchStrategy:
@@ -10,5 +10,5 @@ class WordSearchStrategy:
 
     def find_best_word(
         self, rack: List[str], word_placer_checker: WordPlacerChecker
-    ) -> PlaceWord:
+    ) -> ValidWord:
         raise NotImplementedError("Subclasses must implement this method")

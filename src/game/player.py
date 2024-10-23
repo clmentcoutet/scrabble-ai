@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import List
+from collections import Counter
 
-from src.utils.grid import WordPlacerChecker
+from src.utils.grid import WordPlacerChecker, compute_total_word_score
 from src.search_strategy.WordSearchStrategy import WordSearchStrategy
+from src.utils.logger_config import logger
 from src.utils.typing_utils import PlaceWord, Direction
 
 
@@ -28,11 +30,11 @@ class Player(ABC):
 
     @abstractmethod
     def __repr__(self):
-        return f"{self.player_id} with rack {self.rack} and score {self.score_history}"
+        return f"{self.player_id} with rack {self.rack} and total score {sum(self.score_history)}"
 
     @abstractmethod
     def __str__(self):
-        return f"{self.player_id} with rack {self.rack} and score {self.score_history}"
+        return f"{self.player_id} with rack {self.rack} and total score {sum(self.score_history)}"
 
     @abstractmethod
     def serialize(self) -> dict:
@@ -56,6 +58,16 @@ class Player(ABC):
 
     def update_score(self, score: int):
         self.score_history.append(score)
+
+    def remove_from_rack(self, letter: str | List[str]):
+        if isinstance(letter, str):
+            self.rack.remove(letter)
+        else:
+            for l in letter:
+                if l in self.rack:
+                    self.rack.remove(l)
+                elif "*" in self.rack:
+                    self.rack.remove("*")
 
 
 class HumanPlayer(Player):
@@ -109,20 +121,25 @@ class HumanPlayer(Player):
         word_placer_checker: WordPlacerChecker,
     ) -> bool:
         result = word_placer_checker.is_word_placable(word, start_position, direction)
+        logger.debug(result)
         if not result["state"]:
             print(result["message"])
             return False
-        is_letter_in_rack = all([letter in self.rack for letter in result["letter_already_placed"]])
+        is_letter_in_rack = all([letter in self.rack + result["letter_already_placed"] for letter in word])
         if not is_letter_in_rack:
             print("You do not have the required letters in your rack")
             return False
-        for letter in result["letter_already_placed"]:
-            self.rack.remove(letter)
+        # Remove the letters from the rack
+        self.remove_from_rack(list(Counter(list(word)) - Counter(result["letter_already_placed"])))
+        # Update the score
+        computed_score = compute_total_word_score(
+            PlaceWord(word=word, start_position=start_position, direction=direction),
+            result["perpendicular_words"],
+        )
+        self.update_score(computed_score)
         return True
 
     def get_valid_move(self, word_placer_checker: WordPlacerChecker) -> PlaceWord:
-        print(word_placer_checker.grid)
-        print(self.display_rack())
         while True:
             start_position = self._get_coordinates()
             direction = self._get_direction()
@@ -149,4 +166,8 @@ class ComputerPlayer(Player):
         return super().serialize() | {"type": "ComputerPlayer"}
 
     def get_valid_move(self, word_placer_checker: WordPlacerChecker) -> PlaceWord:
-        return self.research_method.find_best_word(self.rack, word_placer_checker)
+        valid_word = self.research_method.find_best_word(self.rack, word_placer_checker)
+        (logger.info(f"Computer played {valid_word}"))
+        self.remove_from_rack(valid_word["letter_used"])
+        self.update_score(valid_word["score"])
+        return valid_word["play"]

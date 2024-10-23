@@ -116,27 +116,27 @@ class Game:
 
     def _play_turn(self):
         plays = {}
+        print(f"Turn {self.turn}")
+        print(f"Players: {self._list_players_str()}")
         for player in self.players:
+            print(f"Player {player.player_id} is playing")
             self.current_player = player.player_id
-            print(player.rack)
             self._fill_rack(player)
-            print(player.rack)
+            print(self.grid)
+            print(player.display_rack())
             play = player.get_valid_move(self.word_placer_checker)
-            print(player.rack)
-            score = compute_score(**play)
             self.grid.place_word(**play)
-            player.update_score(score)
             print(
-                f"Player {player.player_id} played {play} and scored {score} points, new score: {player.score_history[-1]}"
+                f"Player {player.player_id} played {play} and scored {player.score_history[-1]} points, new score: {sum(player.score_history)}"
             )
 
             plays[player.player_id] = PlayerMove(rack_before=player.rack, play=play)
+            print("\n")
         self._next_turn(plays)
 
     def play_game(self):
         print(f"Starting game with players: {self._list_players_str()}")
         while self.bag and all([len(player.rack) > 0 for player in self.players]):
-            print(f"debug info: turn {self.turn}, players: {self._list_players_str()}")
             self._play_turn()
         print(f"Game over, final score: {self.score}")
         return self.score
