@@ -11,6 +11,5 @@ Implementation of scrabble in python.
 
 ## Bugs
 
-- Le wordPlacerChecker ne verifie pas si on peut suivre un mot, par exemple ajouter un "ez" à la fin d'un mot à l'infinitif il renverra True meme si le mot n'existe pas (avec seed 42, rajoute aurez à la fin de melia)
-
+- Le jeton joker ne compte pas pour 0 points pour le moment
 

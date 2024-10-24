@@ -2,8 +2,9 @@ import pytest
 import numpy as np
 from typing import List
 
-from src.utils.grid import WordPlacerChecker, Grid, compute_score
-from src.utils.typing_utils import Direction
+from src.engine.grid import Grid, _compute_score
+from src.engine.word_checker import WordPlacerChecker
+from src.utils.typing import Direction
 
 
 class MockTree:
@@ -32,10 +33,10 @@ def word_placer(empty_grid, mock_tree):
 
 
 def test_compute_score():
-    assert compute_score("test", (7, 7), Direction.HORIZONTAL) == 8
-    assert compute_score("toute", (7, 7), Direction.VERTICAL) == 12
-    assert compute_score("tester", (7, 7), Direction.HORIZONTAL) == 14
-    assert compute_score("atout", (7, 7), Direction.VERTICAL) == 12
+    assert _compute_score("test", (7, 7), Direction.HORIZONTAL) == 8
+    assert _compute_score("toute", (7, 7), Direction.VERTICAL) == 12
+    assert _compute_score("tester", (7, 7), Direction.HORIZONTAL) == 14
+    assert _compute_score("atout", (7, 7), Direction.VERTICAL) == 12
 
 
 def test_is_word_in_bounds(word_placer):

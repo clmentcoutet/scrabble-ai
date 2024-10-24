@@ -2,10 +2,11 @@ import random
 from typing import List, TypedDict, Dict
 
 from src.game.bag import Bag, BASE_BAG
-from src.utils.grid import Grid, WordPlacerChecker, compute_score
+from src.engine.grid import Grid
+from src.engine.word_checker import WordPlacerChecker
 from src.game.player import Player
-from src.utils.tree import Tree, BASE_TREE
-from src.utils.typing_utils import PlayerMove
+from src.engine.tree import Tree, BASE_TREE
+from src.utils.typing import PlayerMove
 
 
 class GameState(TypedDict):
@@ -69,7 +70,7 @@ class Game:
     def score(self) -> int:
         if any([len(player.score_history) == 0 for player in self.players]):
             return 0
-        return sum([player.score_history[-1] for player in self.players])
+        return sum([sum(player.score_history) for player in self.players])
 
     def _list_players_str(self) -> str:
         return ", ".join([str(player) for player in self.players])
@@ -126,6 +127,14 @@ class Game:
             print(player.display_rack())
             play = player.get_valid_move(self.word_placer_checker)
             self.grid.place_word(**play)
+            # if the player played no word, skip the turn and reroll the rack
+            if len(play["word"]) == 0:
+                player.nb_skip_turn += 1
+                # reroll the rack
+                self.bag.put_back(player.rack)
+                player.rack = []
+                self._fill_rack(player)
+
             print(
                 f"Player {player.player_id} played {play} and scored {player.score_history[-1]} points, new score: {sum(player.score_history)}"
             )
@@ -136,9 +145,10 @@ class Game:
 
     def play_game(self):
         print(f"Starting game with players: {self._list_players_str()}")
-        while self.bag and all([len(player.rack) > 0 for player in self.players]):
+        while any([len(player.rack) > 0 for player in self.players]) and all([player.nb_skip_turn < 3 for player in self.players]):
             self._play_turn()
         print(f"Game over, final score: {self.score}")
+        print(f"Players: {self._list_players_str()}")
         return self.score
 
     def init_game(self):

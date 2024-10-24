@@ -1,5 +1,5 @@
 import enum
-from typing import TypedDict, List, Dict, Optional
+from typing import TypedDict, List, Dict
 
 
 class Direction(enum.Enum):
@@ -21,7 +21,7 @@ DEFAULT_PLACE_WORD = PlaceWord(
 class ValidWord(TypedDict):
     play: PlaceWord
     letter_used: List[str]
-    score: Optional[int]
+    score: int
 
 
 class PlayerMove(TypedDict):
@@ -45,4 +45,5 @@ class Result(TypedDict):
     state: bool
     letter_already_placed: List[str]
     message: str
-    perpendicular_words: Dict[str, str]
+    perpendicular_words: List[PlaceWord]
+

@@ -1,7 +1,7 @@
 from typing import List
 
-from src.utils.grid import WordPlacerChecker
-from src.utils.typing_utils import PlaceWord, ValidWord
+from src.engine.word_checker import WordPlacerChecker
+from src.utils.typing import ValidWord
 
 
 class WordSearchStrategy:

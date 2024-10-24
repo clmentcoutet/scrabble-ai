@@ -1,10 +1,11 @@
 from collections import Counter
 from typing import List
 
-from src.utils.grid import WordPlacerChecker, compute_total_word_score
+from src.engine.grid import compute_total_word_score
+from src.engine.word_checker import WordPlacerChecker
 from src.search_strategy.WordSearchStrategy import WordSearchStrategy
-from src.utils.tree import Tree
-from src.utils.typing_utils import PlaceWord, Direction, DEFAULT_PLACE_WORD, ValidWord
+from src.engine.tree import Tree
+from src.utils.typing import PlaceWord, Direction, DEFAULT_PLACE_WORD, ValidWord
 from src.utils.utils import measure_execution_time, count_letters
 from src.utils.logger_config import logger
 
@@ -24,7 +25,6 @@ def _find_words(letters: list, tree: Tree) -> List[str]:
 
 
 class UltraNaiveSearch(WordSearchStrategy):
-
     def find_best_word(
         self, rack: List[str], word_placer_checker: WordPlacerChecker
     ) -> ValidWord:
@@ -48,6 +48,7 @@ class UltraNaiveSearch(WordSearchStrategy):
                                     direction=direction,
                                 ),
                                 result["perpendicular_words"],
+                                len(result["letter_already_placed"]),
                             )
                             if score > max_score:
                                 max_score = score
@@ -59,7 +60,12 @@ class UltraNaiveSearch(WordSearchStrategy):
                                 logger.info(
                                     f"New best word: {best_word} with score {max_score}"
                                 )
-                                letter_used = list((Counter(word) - Counter(result["letter_already_placed"])).elements())
+                                letter_used = list(
+                                    (
+                                        Counter(word)
+                                        - Counter(result["letter_already_placed"])
+                                    ).elements()
+                                )
         logger.debug(f"Best word: {best_word}")
         return {
             "play": best_word,
