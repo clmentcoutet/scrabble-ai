@@ -1,11 +1,11 @@
-from typing import Tuple, List, Dict
+from typing import Tuple, List
 
 import numpy as np
 
 from src.engine.grid import Grid
 from src.engine.tree import Tree
 from src.utils.logger_config import logger
-from src.utils.typing import Direction, Result, PlaceWord
+from src.utils.typing import enum, typed_dict as td
 
 
 class WordPlacerChecker:
@@ -14,8 +14,8 @@ class WordPlacerChecker:
         self.words_tree: Tree = words_tree
 
     def is_word_placable(
-        self, word: str, start_position: Tuple[int, int], direction: Direction
-    ) -> Result:
+        self, word: str, start_position: Tuple[int, int], direction: enum.Direction
+    ) -> td.Result:
         """
         Check if a word can be placed on the grid.
         A word can be placed if:
@@ -46,8 +46,8 @@ class WordPlacerChecker:
         return self._check_word_placement(**place_word)
 
     def get_full_word(
-            self, word: str, start_position: Tuple[int, int], direction: Direction
-    ) -> PlaceWord:
+        self, word: str, start_position: Tuple[int, int], direction: enum.Direction
+    ) -> td.PlaceWord:
         """
         Get the full word to be placed on the grid, including any existing letters it connects to.
 
@@ -69,17 +69,19 @@ class WordPlacerChecker:
         # Combine the prefix, word, and suffix to get the full word
         full_word = prefix + word + suffix
 
-        return PlaceWord(
+        return td.PlaceWord(
             word=full_word, start_position=new_start_position, direction=direction
         )
 
-    def _get_prefix(self, start_position: Tuple[int, int], direction: Direction) -> Tuple[str, Tuple[int, int]]:
+    def _get_prefix(
+        self, start_position: Tuple[int, int], direction: enum.Direction
+    ) -> Tuple[str, Tuple[int, int]]:
         """Helper function to get the prefix before the word based on the direction."""
         y, x = start_position
         prefix = ""
         new_start_position = start_position
 
-        if direction == Direction.HORIZONTAL:
+        if direction == enum.Direction.HORIZONTAL:
             current_x = x - 1
             while current_x >= 0 and self.grid[y, current_x] != "":
                 prefix = self.grid[y, current_x] + prefix
@@ -96,12 +98,14 @@ class WordPlacerChecker:
 
         return prefix, new_start_position
 
-    def _get_suffix(self, word: str, start_position: Tuple[int, int], direction: Direction) -> str:
+    def _get_suffix(
+        self, word: str, start_position: Tuple[int, int], direction: enum.Direction
+    ) -> str:
         """Helper function to get the suffix after the word based on the direction."""
         y, x = start_position
         suffix = ""
 
-        if direction == Direction.HORIZONTAL:
+        if direction == enum.Direction.HORIZONTAL:
             current_x = x + len(word)
             width = self.grid.grid.shape[1]
             while current_x < width and self.grid[y, current_x] != "":
@@ -118,7 +122,7 @@ class WordPlacerChecker:
 
     @staticmethod
     def _is_word_in_bounds(
-        word: str, start_position: Tuple[int, int], direction: Direction
+        word: str, start_position: Tuple[int, int], direction: enum.Direction
     ) -> bool:
         """
         Check if a word is in bounds of the grid
@@ -130,9 +134,9 @@ class WordPlacerChecker:
         x, y = start_position
         if len(word) > 15:
             return False
-        if direction == Direction.HORIZONTAL and y + len(word) >= 15:
+        if direction == enum.Direction.HORIZONTAL and y + len(word) >= 15:
             return False
-        if direction == Direction.VERTICAL and x + len(word) >= 15:
+        if direction == enum.Direction.VERTICAL and x + len(word) >= 15:
             return False
         return True
 
@@ -144,8 +148,8 @@ class WordPlacerChecker:
         return np.all(self.grid.grid == "")
 
     def _check_first_word_placement(
-        self, word: str, start_position: Tuple[int, int], direction: Direction
-    ) -> Result:
+        self, word: str, start_position: Tuple[int, int], direction: enum.Direction
+    ) -> td.Result:
         """
         Check if the first word can be placed on the grid
         :param start_position:
@@ -154,7 +158,7 @@ class WordPlacerChecker:
         :return:
         """
         x, y = start_position
-        if direction == Direction.HORIZONTAL:
+        if direction == enum.Direction.HORIZONTAL:
             if y + len(word) - 1 < 7 or y > 7 or x != 7:
                 return self._create_result(
                     False, [], "First word must pass through the center cell"
@@ -167,8 +171,8 @@ class WordPlacerChecker:
         return self._create_result(True, [], "")
 
     def _check_word_placement(
-        self, word: str, start_position: Tuple[int, int], direction: Direction
-    ) -> Result:
+        self, word: str, start_position: Tuple[int, int], direction: enum.Direction
+    ) -> td.Result:
         """
         Check if a word can be placed on the grid
         :param start_position:
@@ -183,7 +187,7 @@ class WordPlacerChecker:
 
         for i, letter in enumerate(word):
             current_pos = (
-                (x, y + i) if direction == Direction.HORIZONTAL else (x + i, y)
+                (x, y + i) if direction == enum.Direction.HORIZONTAL else (x + i, y)
             )
             grid_letter = self.grid[current_pos]
             if grid_letter != "":
@@ -216,8 +220,8 @@ class WordPlacerChecker:
         )
 
     def _check_perpendicular_word(
-        self, position: Tuple[int, int], letter: str, direction: Direction
-    ) -> Result:
+        self, position: Tuple[int, int], letter: str, direction: enum.Direction
+    ) -> td.Result:
         """
         Check if a perpendicular word is valid
         :param position: position of the letter
@@ -226,7 +230,7 @@ class WordPlacerChecker:
         :return:
         """
         x, y = position
-        if direction == Direction.HORIZONTAL:
+        if direction == enum.Direction.HORIZONTAL:
             top_touching = x - 1 >= 0 and self.grid[x - 1, y] != ""
             bottom_touching = x + 1 < 15 and self.grid[x + 1, y] != ""
             place_word = self._get_vertical_word(x, y, letter)
@@ -241,7 +245,9 @@ class WordPlacerChecker:
             return self._create_result(True, [], "", perpendicular_words=[])
 
         if not self.words_tree.is_word(place_word["word"]):
-            return self._create_result(False, [], f"Word {place_word['word']} is not valid")
+            return self._create_result(
+                False, [], f"Word {place_word['word']} is not valid"
+            )
 
         return self._create_result(
             top_touching or bottom_touching,
@@ -250,7 +256,7 @@ class WordPlacerChecker:
             perpendicular_words=[place_word],
         )
 
-    def _get_vertical_word(self, x: int, y: int, letter: str) -> PlaceWord:
+    def _get_vertical_word(self, x: int, y: int, letter: str) -> td.PlaceWord:
         """
         Get the vertical word that contains the letter at position (x, y) and its starting position
 
@@ -271,10 +277,10 @@ class WordPlacerChecker:
         return {
             "word": up_part + letter + down_part,
             "start_position": up_pos,
-            "direction": Direction.VERTICAL
+            "direction": enum.Direction.VERTICAL,
         }
 
-    def _get_horizontal_word(self, x: int, y: int, letter: str) -> PlaceWord:
+    def _get_horizontal_word(self, x: int, y: int, letter: str) -> td.PlaceWord:
         """
         Get the horizontal word that contains the letter at position (x, y) and its starting position
 
@@ -295,10 +301,12 @@ class WordPlacerChecker:
         return {
             "word": left_part + letter + right_part,
             "start_position": left_pos,
-            "direction": Direction.HORIZONTAL
+            "direction": enum.Direction.HORIZONTAL,
         }
 
-    def _get_word_part(self, x: int, y: int, dx: int, dy: int) -> Tuple[str, Tuple[int, int]]:
+    def _get_word_part(
+        self, x: int, y: int, dx: int, dy: int
+    ) -> Tuple[str, Tuple[int, int]]:
         """
         Get the word part and its starting position in the direction (dx, dy) from position (x, y)
 
@@ -335,8 +343,8 @@ class WordPlacerChecker:
         state: bool,
         letter_already_placed: List[str],
         message: str,
-        perpendicular_words: List[PlaceWord] | None = None,
-    ) -> Result:
+        perpendicular_words: List[td.PlaceWord] | None = None,
+    ) -> td.Result:
         """
         Create a result dictionary
         :param state:

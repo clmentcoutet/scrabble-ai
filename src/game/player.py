@@ -5,8 +5,8 @@ from collections import Counter
 from src.engine.grid import compute_total_word_score
 from src.engine.word_checker import WordPlacerChecker
 from src.search_strategy.WordSearchStrategy import WordSearchStrategy
-from src.utils.logger_config import logger
-from src.utils.typing import PlaceWord, Direction
+from src.utils.logger_config import logger, print_logger
+from src.utils.typing import enum, typed_dict as td
 
 
 class Player(ABC):
@@ -48,7 +48,7 @@ class Player(ABC):
         }
 
     @abstractmethod
-    def get_valid_move(self, word_placer_checker: WordPlacerChecker) -> PlaceWord:
+    def get_valid_move(self, word_placer_checker: WordPlacerChecker) -> td.ValidWord:
         """
         Get the move from the player
         :param word_placer_checker:
@@ -93,51 +93,52 @@ class HumanPlayer(Player):
                 row = int(input("Enter the row number: "))
                 col = int(input("Enter the column number: "))
                 if row < 0 or col < 0:
-                    print("Invalid input, please enter a positive number")
+                    print_logger.info("Invalid input, please enter a positive number")
                     continue
                 elif row >= 15 or col >= 15:
-                    print("Invalid input, please enter a number less than 15")
+                    print_logger.info(
+                        "Invalid input, please enter a number less than 15"
+                    )
                     continue
                 return row, col
             except ValueError:
-                print("Invalid input, please enter a number")
+                print_logger.info("Invalid input, please enter a number")
                 continue
 
     @staticmethod
-    def _get_direction() -> Direction:
+    def _get_direction() -> enum.Direction:
         while True:
             fetched_direction = input("Enter the direction (across or down): ")
             match fetched_direction.lower():
                 case "across":
-                    return Direction.HORIZONTAL
+                    return enum.Direction.HORIZONTAL
                 case "down":
-                    return Direction.VERTICAL
+                    return enum.Direction.VERTICAL
                 case _:
-                    print("Invalid direction, please enter 'across' or 'down'")
+                    print_logger.info(
+                        "Invalid direction, please enter 'across' or 'down'"
+                    )
                     continue
 
     def _check_word_validity(
         self,
         word: str,
         start_position: tuple[int, int],
-        direction: Direction,
+        direction: enum.Direction,
         word_placer_checker: WordPlacerChecker,
-    ) -> Tuple[bool, PlaceWord | None]:
+    ) -> Tuple[bool, td.ValidWord | None]:
         result = word_placer_checker.is_word_placable(word, start_position, direction)
         logger.debug(result)
         if not result["state"]:
-            print(result["message"])
+            print_logger.info(result["message"])
             return False, None
         is_letter_in_rack = all(
             [letter in self.rack + result["letter_already_placed"] for letter in word]
         )
         if not is_letter_in_rack:
-            print("You do not have the required letters in your rack")
+            print_logger.info("You do not have the required letters in your rack")
             return False, None
         # Remove the letters from the rack
-        self.remove_from_rack(
-            list(Counter(list(word)) - Counter(result["letter_already_placed"]))
-        )
         place_word = word_placer_checker.get_full_word(word, start_position, direction)
         # Update the score
         computed_score = compute_total_word_score(
@@ -145,10 +146,15 @@ class HumanPlayer(Player):
             result["perpendicular_words"],
             len(result["letter_already_placed"]),
         )
-        self.update_score(computed_score)
-        return True, place_word
+        return True, td.ValidWord(
+            play=place_word,
+            letter_used=list(
+                Counter(list(word)) - Counter(result["letter_already_placed"])
+            ),
+            score=computed_score,
+        )
 
-    def get_valid_move(self, word_placer_checker: WordPlacerChecker) -> PlaceWord:
+    def get_valid_move(self, word_placer_checker: WordPlacerChecker) -> td.ValidWord:
         while True:
             start_position = self._get_coordinates()
             direction = self._get_direction()
@@ -174,8 +180,5 @@ class ComputerPlayer(Player):
     def serialize(self) -> dict:
         return super().serialize() | {"type": "ComputerPlayer"}
 
-    def get_valid_move(self, word_placer_checker: WordPlacerChecker) -> PlaceWord:
-        valid_word = self.research_method.find_best_word(self.rack, word_placer_checker)
-        self.remove_from_rack(valid_word["letter_used"])
-        self.update_score(valid_word["score"])
-        return valid_word["play"]
+    def get_valid_move(self, word_placer_checker: WordPlacerChecker) -> td.ValidWord:
+        return self.research_method.find_best_word(self.rack, word_placer_checker)

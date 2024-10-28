@@ -1,23 +1,14 @@
 import random
-from typing import List, TypedDict, Dict
+import time
+from typing import List, Dict
 
 from src.game.bag import Bag, BASE_BAG
 from src.engine.grid import Grid
 from src.engine.word_checker import WordPlacerChecker
 from src.game.player import Player
 from src.engine.tree import Tree, BASE_TREE
-from src.utils.typing import PlayerMove
-
-
-class GameState(TypedDict):
-    """
-    A game state is a dictionary containing the grid, the bag and the plays
-    the integer key is the hash of the player
-    """
-
-    grid: Grid
-    bag: Bag
-    plays: Dict[int, PlayerMove]
+from src.utils.logger_config import print_logger
+from src.utils.typing import typed_dict as td
 
 
 class Game:
@@ -44,26 +35,28 @@ class Game:
     """
 
     def __init__(
-        self,
-        players: List[Player],
-        grid: Grid = Grid(),
-        tree: Tree = BASE_TREE,
-        bag: Bag = BASE_BAG,
-        rack_size: int = 7,
+            self,
+            players: List[Player],
+            *,
+            grid: Grid = None,  # Default to None, allowing us to create a unique instance per game
+            tree: Tree = BASE_TREE,
+            bag: Bag = None,  # Set up the bag similarly
+            rack_size: int = 7,
     ):
         if len(players) < 2:
             raise ValueError("At least two players are required to play the game")
+
+        # Ensure a unique Grid instance per game
         self.players: List[Player] = players
-        self.grid: Grid = grid
-        self.starter_grid: Grid = grid
+        self.grid: Grid = grid if grid is not None else Grid()
+        self.starter_grid: Grid = self.grid
         self.tree: Tree = tree
-        self.bag: Bag = bag
-        self.starter_bag: Bag = bag
+        self.bag: Bag = bag.copy() if bag is not None else BASE_BAG.copy()
+        self.starter_bag: Bag = self.bag
         self.rack_size: int = rack_size
 
-        self.current_player: int = self.players[0].player_id
         self.turn: int = 0
-        self.game_history: dict[int, GameState] = {}
+        self.game_history: td.GameHistory = td.GameHistory(history=[], players_score={})
         self.word_placer_checker = WordPlacerChecker(self.grid, self.tree)
 
     @property
@@ -81,35 +74,22 @@ class Game:
     def serialize(self) -> dict:
         return {
             "players": [player.serialize() for player in self.players],
-            "current_grid": self.grid.serialize(),
             "starter_grid": self.starter_grid.serialize(),
-            "tree": self.tree.origin_file_path,
-            "current_bag": self.bag.serialize(),
             "starter_bag": self.starter_bag.serialize(),
+            "tree": self.tree.origin_file_path,
             "rack_size": self.rack_size,
             "game_history": self.game_history,
         }
 
-    def _next_turn(self, plays: Dict[int, PlayerMove]) -> None:
+    def _next_turn(self, plays: Dict[int, td.PlayerMove]) -> None:
         """
         Go to the next turn, a turn is when each player has played once
         - update the game history for the turn
         - update the turn number
         """
 
-        self.game_history[self.turn] = {
-            "grid": self.grid,
-            "bag": self.bag,
-            "plays": plays,
-        }
+        self.game_history["history"].append(plays)
         self.turn += 1
-
-    def _get_current_player_index(self) -> int:
-        return next(
-            index
-            for index, player in enumerate(self.players)
-            if player.player_id == self.current_player
-        )
 
     def _fill_rack(self, player: Player):
         nb_letters = self.rack_size - len(player.rack)
@@ -117,15 +97,19 @@ class Game:
 
     def _play_turn(self):
         plays = {}
-        print(f"Turn {self.turn}")
-        print(f"Players: {self._list_players_str()}")
+        print_logger.info(f"Turn {self.turn}")
+        print_logger.info(f"Players: {self._list_players_str()}")
         for player in self.players:
-            print(f"Player {player.player_id} is playing")
-            self.current_player = player.player_id
+            print_logger.info(f"game Id: {id(self)}, {self.grid}, {id(self.grid)}, {id(self.grid.grid)}")
+            print_logger.info(f"Player {player.player_id} is playing")
             self._fill_rack(player)
-            print(self.grid)
-            print(player.display_rack())
-            play = player.get_valid_move(self.word_placer_checker)
+            print_logger.info(self.grid)
+            print_logger.info(player.display_rack())
+            previous_race = player.rack.copy()
+            valid_word = player.get_valid_move(self.word_placer_checker)
+            player.remove_from_rack(valid_word["letter_used"])
+            player.update_score(valid_word["score"])
+            play = valid_word["play"]
             self.grid.place_word(**play)
             # if the player played no word, skip the turn and reroll the rack
             if len(play["word"]) == 0:
@@ -135,21 +119,29 @@ class Game:
                 player.rack = []
                 self._fill_rack(player)
 
-            print(
+            print_logger.info(
                 f"Player {player.player_id} played {play} and scored {player.score_history[-1]} points, new score: {sum(player.score_history)}"
             )
 
-            plays[player.player_id] = PlayerMove(rack_before=player.rack, play=play)
-            print("\n")
+            plays[player.player_id] = td.PlayerMove(
+                rack_before=previous_race, valid_word=valid_word
+            )
+            print_logger.info("\n")
         self._next_turn(plays)
 
-    def play_game(self):
-        print(f"Starting game with players: {self._list_players_str()}")
-        while any([len(player.rack) > 0 for player in self.players]) and all([player.nb_skip_turn < 3 for player in self.players]):
+    def play_game(self) -> td.GameHistory:
+        print_logger.info(f"Starting game with players: {self._list_players_str()}")
+        while any([len(player.rack) > 0 for player in self.players]) and all(
+            [player.nb_skip_turn < 3 for player in self.players]
+        ):
             self._play_turn()
-        print(f"Game over, final score: {self.score}")
-        print(f"Players: {self._list_players_str()}")
-        return self.score
+            time.sleep(0.1)
+        print_logger.info(f"Game over, final score: {self.score}")
+        print_logger.info(f"Players: {self._list_players_str()}")
+        self.game_history["players_score"] = {
+            player.player_id: player.score_history for player in self.players
+        }
+        return self.game_history
 
     def init_game(self):
         random.shuffle(self.players)

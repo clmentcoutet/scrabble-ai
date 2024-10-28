@@ -1,18 +1,22 @@
-from typing import Dict, List
+from typing import List
 
 import numpy as np
 
 from src import settings
 from src.utils import utils
 from src.utils.logger_config import logger
-from src.utils.typing import CellValue, Direction, PlaceWord
+from src.utils.typing import enum, typed_dict as td
 
 LETTER_VALUES = utils.load_letter_values(settings.LETTERS_VALUES_PATH)
 
 
 class Grid:
-    def __init__(self, grid: np.ndarray = np.zeros((15, 15), dtype=str)):
-        self.grid = grid
+    def __init__(self, grid: np.ndarray = None):
+        if grid is None:
+            self.grid = np.array([[""] * 15] * 15, dtype=str)
+        else:
+            # Create a deep copy of the input grid to ensure independence
+            self.grid = np.array(grid, copy=True)
 
     def __getitem__(self, item):
         return self.grid[item]
@@ -41,7 +45,7 @@ class Grid:
         return {"grid": self.grid.tolist(), "shape": self.grid.shape}
 
     def place_word(
-        self, word: str, start_position: tuple, direction: Direction
+        self, word: str, start_position: tuple, direction: enum.Direction
     ) -> None:
         """
         Place a word on the grid
@@ -52,7 +56,7 @@ class Grid:
         """
         x, y = start_position
         for i, letter in enumerate(word):
-            if direction == Direction.HORIZONTAL:
+            if direction == enum.Direction.HORIZONTAL:
                 self.grid[x, y + i] = letter
             else:
                 self.grid[x + i, y] = letter
@@ -86,7 +90,7 @@ EMPTY_GRID = Grid(np.array([[""] * 15] * 15))
 def _compute_score(
     word: str,
     start_position: tuple,
-    direction: Direction,
+    direction: enum.Direction,
 ) -> int:
     """
     Compute the score of a word placed on the grid
@@ -100,7 +104,7 @@ def _compute_score(
     logger.debug(f"Computing score for word {word}")
     for i, letter in enumerate(word):
         x, y = start_position
-        if direction == Direction.HORIZONTAL:
+        if direction == enum.Direction.HORIZONTAL:
             x += i
         else:
             y += i
@@ -108,19 +112,19 @@ def _compute_score(
         cell_value = SCORE_GRID[x, y]
         letter_value = LETTER_VALUES[letter]["value"]
         match cell_value:
-            case CellValue.EMPTY.value:
+            case enum.CellValue.EMPTY.value:
                 score += letter_value
-            case CellValue.DOUBLE_WORD.value:
+            case enum.CellValue.DOUBLE_WORD.value:
                 score += letter_value
                 word_multiplier *= 2
-            case CellValue.TRIPLE_WORD.value:
+            case enum.CellValue.TRIPLE_WORD.value:
                 score += letter_value
                 word_multiplier *= 3
-            case CellValue.DOUBLE_LETTER.value:
+            case enum.CellValue.DOUBLE_LETTER.value:
                 score += letter_value * 2
-            case CellValue.TRIPLE_LETTER.value:
+            case enum.CellValue.TRIPLE_LETTER.value:
                 score += letter_value * 3
-            case CellValue.START.value:
+            case enum.CellValue.START.value:
                 SCORE_GRID[x, y] = 0
                 score += letter_value
                 word_multiplier *= 2
@@ -128,7 +132,9 @@ def _compute_score(
 
 
 def compute_total_word_score(
-    place_word: PlaceWord, perpendicular_words: List[PlaceWord], nb_letter_already_placed: int
+    place_word: td.PlaceWord,
+    perpendicular_words: List[td.PlaceWord],
+    nb_letter_already_placed: int,
 ) -> int:
     """
     Compute the total score of a word placed on the grid
@@ -146,7 +152,10 @@ def compute_total_word_score(
     for perpendicular_word in perpendicular_words:
         perpendicular_score = _compute_score(
             perpendicular_word["word"],
-            (perpendicular_word["start_position"][1], perpendicular_word["start_position"][0]),
+            (
+                perpendicular_word["start_position"][1],
+                perpendicular_word["start_position"][0],
+            ),
             perpendicular_word["direction"],
         )
         score += perpendicular_score

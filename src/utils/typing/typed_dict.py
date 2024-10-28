@@ -1,21 +1,12 @@
-import enum
 from typing import TypedDict, List, Dict
 
-
-class Direction(enum.Enum):
-    HORIZONTAL = "H"
-    VERTICAL = "V"
+from src.utils.typing.enum import Direction
 
 
 class PlaceWord(TypedDict):
     word: str
     start_position: tuple
     direction: Direction
-
-
-DEFAULT_PLACE_WORD = PlaceWord(
-    word="", start_position=(0, 0), direction=Direction.HORIZONTAL
-)
 
 
 class ValidWord(TypedDict):
@@ -26,19 +17,7 @@ class ValidWord(TypedDict):
 
 class PlayerMove(TypedDict):
     rack_before: List[str]
-    play: PlaceWord
-
-
-class CellValue(enum.Enum):
-    EMPTY = 0
-    DOUBLE_WORD = 1
-    TRIPLE_WORD = 4
-    DOUBLE_LETTER = 3
-    TRIPLE_LETTER = 2
-    START = 5
-
-    def __repr__(self):
-        return self.value
+    valid_word: ValidWord
 
 
 class Result(TypedDict):
@@ -47,3 +26,7 @@ class Result(TypedDict):
     message: str
     perpendicular_words: List[PlaceWord]
 
+
+class GameHistory(TypedDict):
+    history: List[Dict[int, PlayerMove]]
+    players_score: Dict[int, List[int]]

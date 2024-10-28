@@ -1,5 +1,4 @@
 import logging
-import sys
 
 
 def _setup_logger():
@@ -16,7 +15,7 @@ def _setup_logger():
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.WARN)  # Afficher tous les logs dans la console
     console_handler.setFormatter(formatter)
-    #console_handler.setStream(sys.stdout)
+    # console_handler.setStream(sys.stdout)
 
     # Handler pour enregistrer les erreurs critiques dans un fichier
     file_handler = logging.FileHandler("logs/critical_errors.log")
@@ -32,4 +31,20 @@ def _setup_logger():
     return logger
 
 
+def _setup_print_logger():
+    logger = logging.getLogger("print_logger")
+    logger.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter("%(message)s")
+
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.CRITICAL)
+    console_handler.setFormatter(formatter)
+
+    logger.addHandler(console_handler)
+
+    return logger
+
+
 logger = _setup_logger()
+print_logger = _setup_print_logger()

@@ -28,6 +28,9 @@ class Bag:
             "bag": self.bag,
         }
 
+    def copy(self):
+        return Bag(self.letter_distribution)
+
     def is_in_bag(self, letter: str) -> bool:
         return letter in self.bag
 
