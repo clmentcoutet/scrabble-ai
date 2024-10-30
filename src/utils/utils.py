@@ -1,7 +1,7 @@
 import time
 from typing import TypedDict, Dict, List
 
-from src.utils.logger_config import logger
+from src.settings.logger_config import logger
 
 
 class LetterValue(TypedDict):

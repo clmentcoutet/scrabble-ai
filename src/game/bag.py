@@ -1,7 +1,7 @@
 import random
 from typing import Generator, List
 
-from src import settings
+from src.settings import settings
 from src.utils.utils import LetterValue, load_letter_values
 
 

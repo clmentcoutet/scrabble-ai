@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from collections import Counter
 
-from src.engine.grid import compute_total_word_score
+from src.engine.grid import compute_total_word_score, Grid
 from src.engine.word_checker import WordPlacerChecker
 from src.search_strategy.WordSearchStrategy import WordSearchStrategy
-from src.utils.logger_config import logger, print_logger
+from src.settings.logger_config import logger, print_logger
 from src.utils.typing import enum, typed_dict as td
 
 
@@ -23,13 +23,14 @@ class Player(ABC):
     """
 
     def __init__(self):
+        self.strategy_code = ""
         self.rack: List[str] = []
         self.score_history: List[int] = []
         self.nb_skip_turn: int = 0
 
     @property
-    def player_id(self) -> int:
-        return hash(self)
+    def player_id(self) -> str:
+        return f"{hash(self)}/{self.strategy_code}"
 
     @abstractmethod
     def __repr__(self):
@@ -48,13 +49,21 @@ class Player(ABC):
         }
 
     @abstractmethod
-    def get_valid_move(self, word_placer_checker: WordPlacerChecker) -> td.ValidWord:
+    def get_valid_move(
+        self, word_placer_checker: WordPlacerChecker, score_grid: Grid
+    ) -> td.ValidWord:
         """
         Get the move from the player
+        :param score_grid:
         :param word_placer_checker:
         :return: return a valid move, cannot return invalid moves
         """
         pass
+
+    def init_player(self, *, rack: Optional[List[str]] = None):
+        self.rack = rack if rack is not None else []
+        self.score_history = []
+        self.nb_skip_turn = 0
 
     def display_rack(self):
         return f"rack: {', '.join(self.rack)}"
@@ -76,6 +85,7 @@ class Player(ABC):
 class HumanPlayer(Player):
     def __init__(self):
         super().__init__()
+        self.strategy_code = "human"
 
     def __repr__(self):
         return f"Human Player {super().__repr__()}"
@@ -126,14 +136,18 @@ class HumanPlayer(Player):
         start_position: tuple[int, int],
         direction: enum.Direction,
         word_placer_checker: WordPlacerChecker,
+        score_grid: Grid,
     ) -> Tuple[bool, td.ValidWord | None]:
         result = word_placer_checker.is_word_placable(word, start_position, direction)
-        logger.debug(result)
+        logger.info(result)
         if not result["state"]:
             print_logger.info(result["message"])
             return False, None
         is_letter_in_rack = all(
-            [letter in self.rack + result["letter_already_placed"] for letter in word]
+            [
+                letter in self.rack + list(result["letter_already_placed"].values())
+                for letter in word
+            ]
         )
         if not is_letter_in_rack:
             print_logger.info("You do not have the required letters in your rack")
@@ -144,23 +158,27 @@ class HumanPlayer(Player):
         computed_score = compute_total_word_score(
             place_word,
             result["perpendicular_words"],
-            len(result["letter_already_placed"]),
+            len(list(result["letter_already_placed"].values())),
+            score_grid,
         )
         return True, td.ValidWord(
             play=place_word,
             letter_used=list(
-                Counter(list(word)) - Counter(result["letter_already_placed"])
+                Counter(list(word))
+                - Counter(list(result["letter_already_placed"].values()))
             ),
             score=computed_score,
         )
 
-    def get_valid_move(self, word_placer_checker: WordPlacerChecker) -> td.ValidWord:
+    def get_valid_move(
+        self, word_placer_checker: WordPlacerChecker, score_grid: Grid
+    ) -> td.ValidWord:
         while True:
             start_position = self._get_coordinates()
             direction = self._get_direction()
             word = input("Enter the word to place: ")
             result = self._check_word_validity(
-                word, start_position, direction, word_placer_checker
+                word, start_position, direction, word_placer_checker, score_grid
             )
             if result[0]:
                 return result[1]
@@ -170,6 +188,7 @@ class ComputerPlayer(Player):
     def __init__(self, word_search_strategy: WordSearchStrategy):
         super().__init__()
         self.research_method: WordSearchStrategy = word_search_strategy
+        self.strategy_code = f"computer_{word_search_strategy.strategy_code}"
 
     def __repr__(self):
         return f"Computer Player {super().__repr__()}"
@@ -180,5 +199,9 @@ class ComputerPlayer(Player):
     def serialize(self) -> dict:
         return super().serialize() | {"type": "ComputerPlayer"}
 
-    def get_valid_move(self, word_placer_checker: WordPlacerChecker) -> td.ValidWord:
-        return self.research_method.find_best_word(self.rack, word_placer_checker)
+    def get_valid_move(
+        self, word_placer_checker: WordPlacerChecker, score_grid: Grid
+    ) -> td.ValidWord:
+        return self.research_method.find_best_word(
+            self.rack, word_placer_checker, score_grid
+        )

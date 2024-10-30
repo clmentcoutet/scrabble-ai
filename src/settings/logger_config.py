@@ -38,7 +38,7 @@ def _setup_print_logger():
     formatter = logging.Formatter("%(message)s")
 
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.CRITICAL)
+    console_handler.setLevel(logging.WARN)
     console_handler.setFormatter(formatter)
 
     logger.addHandler(console_handler)

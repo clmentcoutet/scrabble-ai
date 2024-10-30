@@ -22,11 +22,11 @@ class PlayerMove(TypedDict):
 
 class Result(TypedDict):
     state: bool
-    letter_already_placed: List[str]
+    letter_already_placed: Dict[int, str]
     message: str
     perpendicular_words: List[PlaceWord]
 
 
 class GameHistory(TypedDict):
-    history: List[Dict[int, PlayerMove]]
-    players_score: Dict[int, List[int]]
+    history: List[Dict[str, PlayerMove]]
+    players_score: Dict[str, List[int]]

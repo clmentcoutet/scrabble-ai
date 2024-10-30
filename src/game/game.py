@@ -2,12 +2,14 @@ import random
 import time
 from typing import List, Dict
 
+from typing_extensions import Optional
+
 from src.game.bag import Bag, BASE_BAG
-from src.engine.grid import Grid
+from src.engine.grid import Grid, SCORE_GRID
 from src.engine.word_checker import WordPlacerChecker
 from src.game.player import Player
 from src.engine.tree import Tree, BASE_TREE
-from src.utils.logger_config import print_logger
+from src.settings.logger_config import print_logger
 from src.utils.typing import typed_dict as td
 
 
@@ -35,13 +37,16 @@ class Game:
     """
 
     def __init__(
-            self,
-            players: List[Player],
-            *,
-            grid: Grid = None,  # Default to None, allowing us to create a unique instance per game
-            tree: Tree = BASE_TREE,
-            bag: Bag = None,  # Set up the bag similarly
-            rack_size: int = 7,
+        self,
+        players: List[Player],
+        *,
+        grid: Optional[
+            Grid
+        ] = None,  # Default to None, allowing us to create a unique instance per game
+        tree: Tree = BASE_TREE,
+        bag: Optional[Bag] = None,  # Set up the bag similarly
+        score_grid: Optional[Grid] = None,
+        rack_size: int = 7,
     ):
         if len(players) < 2:
             raise ValueError("At least two players are required to play the game")
@@ -52,6 +57,7 @@ class Game:
         self.starter_grid: Grid = self.grid
         self.tree: Tree = tree
         self.bag: Bag = bag.copy() if bag is not None else BASE_BAG.copy()
+        self.score_grid: Grid = score_grid if score_grid is not None else SCORE_GRID
         self.starter_bag: Bag = self.bag
         self.rack_size: int = rack_size
 
@@ -81,7 +87,7 @@ class Game:
             "game_history": self.game_history,
         }
 
-    def _next_turn(self, plays: Dict[int, td.PlayerMove]) -> None:
+    def _next_turn(self, plays: Dict[str, td.PlayerMove]) -> None:
         """
         Go to the next turn, a turn is when each player has played once
         - update the game history for the turn
@@ -100,13 +106,14 @@ class Game:
         print_logger.info(f"Turn {self.turn}")
         print_logger.info(f"Players: {self._list_players_str()}")
         for player in self.players:
-            print_logger.info(f"game Id: {id(self)}, {self.grid}, {id(self.grid)}, {id(self.grid.grid)}")
             print_logger.info(f"Player {player.player_id} is playing")
             self._fill_rack(player)
             print_logger.info(self.grid)
             print_logger.info(player.display_rack())
             previous_race = player.rack.copy()
-            valid_word = player.get_valid_move(self.word_placer_checker)
+            valid_word = player.get_valid_move(
+                self.word_placer_checker, self.score_grid
+            )
             player.remove_from_rack(valid_word["letter_used"])
             player.update_score(valid_word["score"])
             play = valid_word["play"]
@@ -147,4 +154,4 @@ class Game:
         random.shuffle(self.players)
         for player in self.players:
             nb_letters = self.rack_size - len(player.rack)
-            player.rack = list(self.bag.pick_n_random_letters(nb_letters))
+            player.init_player(rack=list(self.bag.pick_n_random_letters(nb_letters)))

@@ -1,38 +1,35 @@
 from collections import Counter
 from typing import List
 
-from src.engine.grid import compute_total_word_score
+from src.engine.grid import compute_total_word_score, Grid
 from src.engine.word_checker import WordPlacerChecker
 from src.search_strategy.WordSearchStrategy import WordSearchStrategy
-from src.engine.tree import Tree
-from src.utils.utils import measure_execution_time, count_letters
-from src.utils.logger_config import logger
+from src.settings.logger_config import logger
 from src.utils.typing import enum, typed_dict as td
 from src.utils.typing.default import DEFAULT_PLACE_WORD
 
 
-@measure_execution_time
-def _find_words(letters: list, tree: Tree) -> List[str]:
+class NaiveBlindSearch(WordSearchStrategy):
     """
-    Find all valid words that can be formed with the given letters
-    :param letters: list of letters
-    :param tree: tree containing all valid words
-    :return: list of valid words
+    UltraNaiveSearch is a search strategy that finds the best word to play by
+    checking all possible words that can be formed with the given rack and
+    placing them on the board to find the best word to play. This strategy
+    does not take into account the board state or the words already placed on
     """
-    letters_count = count_letters(letters)
-    results: List[str] = []
-    tree.search(tree.root, letters_count, [], results)
-    return sorted(results, key=len, reverse=True)
 
+    def __init__(self):
+        super().__init__()
+        self.strategy_code = "naive_blind"
 
-class UltraNaiveSearch(WordSearchStrategy):
     def find_best_word(
-        self, rack: List[str], word_placer_checker: WordPlacerChecker
+        self, rack: List[str], word_placer_checker: WordPlacerChecker, score_grid: Grid
     ) -> td.ValidWord:
         max_score = 0
         best_word: td.PlaceWord = DEFAULT_PLACE_WORD
         letter_used = []
-        list_possible_words = _find_words(rack, word_placer_checker.words_tree)
+        list_possible_words = self._find_all_possible_word(
+            rack, word_placer_checker.tree
+        )
         logger.debug(f"Possible words: {list_possible_words}")
         for word in list_possible_words:
             for direction in [enum.Direction.HORIZONTAL, enum.Direction.VERTICAL]:
@@ -49,7 +46,8 @@ class UltraNaiveSearch(WordSearchStrategy):
                                     direction=direction,
                                 ),
                                 result["perpendicular_words"],
-                                len(result["letter_already_placed"]),
+                                len(list(result["letter_already_placed"].values())),
+                                score_grid,
                             )
                             if score > max_score:
                                 max_score = score
@@ -64,7 +62,11 @@ class UltraNaiveSearch(WordSearchStrategy):
                                 letter_used = list(
                                     (
                                         Counter(word)
-                                        - Counter(result["letter_already_placed"])
+                                        - Counter(
+                                            list(
+                                                result["letter_already_placed"].values()
+                                            )
+                                        )
                                     ).elements()
                                 )
         logger.debug(f"Best word: {best_word}")

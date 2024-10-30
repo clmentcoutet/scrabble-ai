@@ -1,17 +1,17 @@
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 
-from src import settings
+from src.settings import settings
 from src.utils import utils
-from src.utils.logger_config import logger
+from src.settings.logger_config import logger
 from src.utils.typing import enum, typed_dict as td
 
 LETTER_VALUES = utils.load_letter_values(settings.LETTERS_VALUES_PATH)
 
 
 class Grid:
-    def __init__(self, grid: np.ndarray = None):
+    def __init__(self, grid: Optional[np.ndarray] = None):
         if grid is None:
             self.grid = np.array([[""] * 15] * 15, dtype=str)
         else:
@@ -91,6 +91,8 @@ def _compute_score(
     word: str,
     start_position: tuple,
     direction: enum.Direction,
+    *,
+    score_grid: Grid = SCORE_GRID,
 ) -> int:
     """
     Compute the score of a word placed on the grid
@@ -109,7 +111,7 @@ def _compute_score(
         else:
             y += i
         logger.debug(f"Letter {letter} at position {x, y}")
-        cell_value = SCORE_GRID[x, y]
+        cell_value = score_grid[x, y]
         letter_value = LETTER_VALUES[letter]["value"]
         match cell_value:
             case enum.CellValue.EMPTY.value:
@@ -125,7 +127,6 @@ def _compute_score(
             case enum.CellValue.TRIPLE_LETTER.value:
                 score += letter_value * 3
             case enum.CellValue.START.value:
-                SCORE_GRID[x, y] = 0
                 score += letter_value
                 word_multiplier *= 2
     return score * word_multiplier
@@ -135,9 +136,11 @@ def compute_total_word_score(
     place_word: td.PlaceWord,
     perpendicular_words: List[td.PlaceWord],
     nb_letter_already_placed: int,
+    score_grid: Grid,
 ) -> int:
     """
     Compute the total score of a word placed on the grid
+    :param score_grid:
     :param nb_letter_already_placed:
     :param place_word:
     :param perpendicular_words:
@@ -146,7 +149,7 @@ def compute_total_word_score(
     word = place_word["word"]
     row, column = place_word["start_position"]
     direction = place_word["direction"]
-    score = _compute_score(word, (column, row), direction)
+    score = _compute_score(word, (column, row), direction, score_grid=score_grid)
     if len(word) - nb_letter_already_placed == 7:
         score += 50
     for perpendicular_word in perpendicular_words:
@@ -157,6 +160,15 @@ def compute_total_word_score(
                 perpendicular_word["start_position"][0],
             ),
             perpendicular_word["direction"],
+            score_grid=score_grid,
         )
         score += perpendicular_score
+    # update the score grid
+    for i, letter in enumerate(word):
+        x, y = place_word["start_position"]
+        if place_word["direction"] == enum.Direction.VERTICAL:
+            x += i
+        else:
+            y += i
+        score_grid[x, y] = enum.CellValue.EMPTY.value
     return score

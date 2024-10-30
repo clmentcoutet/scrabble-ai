@@ -1,17 +1,17 @@
-from typing import Tuple, List
+from typing import Tuple, List, Dict
 
 import numpy as np
 
 from src.engine.grid import Grid
 from src.engine.tree import Tree
-from src.utils.logger_config import logger
+from src.settings.logger_config import logger
 from src.utils.typing import enum, typed_dict as td
 
 
 class WordPlacerChecker:
     def __init__(self, grid: Grid, words_tree: Tree):
         self.grid: Grid = grid
-        self.words_tree: Tree = words_tree
+        self.tree: Tree = words_tree
 
     def is_word_placable(
         self, word: str, start_position: Tuple[int, int], direction: enum.Direction
@@ -30,15 +30,15 @@ class WordPlacerChecker:
 
         """
         if not self._is_word_in_bounds(word, start_position, direction):
-            return self._create_result(False, [], "Word does not fit on the grid")
+            return self._create_result(False, {}, "Word does not fit on the grid")
 
         place_word = self.get_full_word(word, start_position, direction)
 
         if not self._is_word_in_bounds(**place_word):
-            return self._create_result(False, [], "Word does not fit on the grid")
+            return self._create_result(False, {}, "Word does not fit on the grid")
 
-        if not self.words_tree.is_word(place_word["word"]):
-            return self._create_result(False, [], f"Word {word} is not valid")
+        if not self.tree.is_word(place_word["word"]):
+            return self._create_result(False, {}, f"Word {word} is not valid")
 
         if self._is_grid_empty():
             return self._check_first_word_placement(**place_word)
@@ -161,14 +161,14 @@ class WordPlacerChecker:
         if direction == enum.Direction.HORIZONTAL:
             if y + len(word) - 1 < 7 or y > 7 or x != 7:
                 return self._create_result(
-                    False, [], "First word must pass through the center cell"
+                    False, {}, "First word must pass through the center cell"
                 )
         else:
             if x + len(word) - 1 < 7 or x > 7 or y != 7:
                 return self._create_result(
-                    False, [], "First word must pass through the center cell"
+                    False, {}, "First word must pass through the center cell"
                 )
-        return self._create_result(True, [], "")
+        return self._create_result(True, {}, "")
 
     def _check_word_placement(
         self, word: str, start_position: Tuple[int, int], direction: enum.Direction
@@ -180,7 +180,7 @@ class WordPlacerChecker:
         :param direction:
         :return:
         """
-        letter_already_placed = []
+        letter_already_placed = {}
         perpendicular_words = []
         is_touching_existing_word = False
         x, y = start_position
@@ -194,11 +194,11 @@ class WordPlacerChecker:
                 if grid_letter != letter:
                     return self._create_result(
                         False,
-                        [],
+                        {},
                         f"Looking to place letter {letter} at position {current_pos} but found {grid_letter}",
                     )
                 else:
-                    letter_already_placed.append(letter)
+                    letter_already_placed[i] = letter
                 is_touching_existing_word = True
             else:
                 horizontal_result = self._check_perpendicular_word(
@@ -211,6 +211,8 @@ class WordPlacerChecker:
                     and horizontal_result["perpendicular_words"] != []
                 )
                 perpendicular_words.extend(horizontal_result["perpendicular_words"])
+        if len(letter_already_placed) == len(word):
+            return self._create_result(False, {}, "Word is already placed on the grid")
 
         return self._create_result(
             is_touching_existing_word,
@@ -242,16 +244,16 @@ class WordPlacerChecker:
         logger.debug(f"Checking perpendicular word {place_word}")
 
         if not (top_touching or bottom_touching):
-            return self._create_result(True, [], "", perpendicular_words=[])
+            return self._create_result(True, {}, "", perpendicular_words=[])
 
-        if not self.words_tree.is_word(place_word["word"]):
+        if not self.tree.is_word(place_word["word"]):
             return self._create_result(
-                False, [], f"Word {place_word['word']} is not valid"
+                False, {}, f"Word {place_word['word']} is not valid"
             )
 
         return self._create_result(
             top_touching or bottom_touching,
-            [],
+            {},
             "",
             perpendicular_words=[place_word],
         )
@@ -341,7 +343,7 @@ class WordPlacerChecker:
     @staticmethod
     def _create_result(
         state: bool,
-        letter_already_placed: List[str],
+        letter_already_placed: Dict[int, str],
         message: str,
         perpendicular_words: List[td.PlaceWord] | None = None,
     ) -> td.Result:
